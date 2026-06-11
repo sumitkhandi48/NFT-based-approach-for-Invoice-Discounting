@@ -158,4 +158,52 @@ contract InvoiceNFT is ERC721URIStorage {
 
         emit InvoiceSigned(_tokenId, msg.sender);
     }
+
+    // ──────────────────────────────────────────────
+    //  Algorithm 3 – approveInvoiceSale
+    // ──────────────────────────────────────────────
+
+    /// @notice Emitted when the owner lists an invoice NFT for sale.
+    event InvoiceListedForSale(
+        uint256 indexed tokenId,
+        address indexed owner,
+        uint256 price
+    );
+
+    /**
+     * @notice Allows the NFT owner to list a signed invoice for sale
+     *         at a discounted price on the marketplace.
+     * @dev    Implements Algorithm 3 from the IEEE paper:
+     *         1. Verify that msg.sender is the current owner of the NFT.
+     *         2. Verify the invoice has been signed by the buyer (isApproved).
+     *         3. Verify the invoice is not already listed for sale.
+     *         4. Set currPrice to the discounted price.
+     *         5. Set forSale = true.
+     *
+     *         The buyer must have signed the invoice (Algorithm 2) before
+     *         the owner can list it for sale.
+     *
+     * @param _tokenId The ID of the invoice NFT to list.
+     * @param _price   The discounted selling price (in wei).
+     */
+    function approveInvoiceSale(uint256 _tokenId, uint256 _price) external {
+        InvoiceMetadata storage invoice = InvoiceNFT_Map[_tokenId];
+
+        // Step 1: Only the current NFT owner can list for sale
+        require(ownerOf(_tokenId) == msg.sender, "Only the owner can list this invoice");
+
+        // Step 2: Invoice must be signed by the buyer first
+        require(invoice.isApproved, "Invoice must be signed by buyer first");
+
+        // Step 3: Invoice must not already be listed
+        require(!invoice.forSale, "Invoice is already listed for sale");
+
+        // Step 4: Set the discounted selling price
+        invoice.currPrice = _price;
+
+        // Step 5: Mark as listed for sale
+        invoice.forSale = true;
+
+        emit InvoiceListedForSale(_tokenId, msg.sender, _price);
+    }
 }
