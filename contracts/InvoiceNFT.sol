@@ -124,4 +124,38 @@ contract InvoiceNFT is ERC721URIStorage {
 
         emit InvoiceMinted(tokenId, msg.sender, _buyer, _invoiceAmount, _dueDate);
     }
+
+    // ──────────────────────────────────────────────
+    //  Algorithm 2 – signInvoice
+    // ──────────────────────────────────────────────
+
+    /// @notice Emitted when the buyer co-signs an invoice NFT.
+    event InvoiceSigned(uint256 indexed tokenId, address indexed buyer);
+
+    /**
+     * @notice Allows the designated buyer to co-sign (approve) an invoice.
+     * @dev    Implements Algorithm 2 from the IEEE paper:
+     *         1. Verify that msg.sender is the buyer recorded in the invoice.
+     *         2. Verify the invoice has not already been approved.
+     *         3. Set isApproved = true.
+     *
+     *         The invoice must be signed by the buyer before the supplier
+     *         can list it for sale on the marketplace (Algorithm 3).
+     *
+     * @param _tokenId The ID of the invoice NFT to sign.
+     */
+    function signInvoice(uint256 _tokenId) external {
+        InvoiceMetadata storage invoice = InvoiceNFT_Map[_tokenId];
+
+        // Step 1: Only the designated buyer can sign
+        require(msg.sender == invoice.buyer, "Only the buyer can sign this invoice");
+
+        // Step 2: Invoice must not already be approved
+        require(!invoice.isApproved, "Invoice is already signed");
+
+        // Step 3: Set isApproved to true
+        invoice.isApproved = true;
+
+        emit InvoiceSigned(_tokenId, msg.sender);
+    }
 }
