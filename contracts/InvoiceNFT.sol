@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
 /**
  * @title InvoiceNFT
@@ -16,7 +16,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
  *         prevents the same off-chain invoice document from being
  *         tokenised more than once.
  */
-contract InvoiceNFT is ERC721 {
+contract InvoiceNFT is ERC721URIStorage {
     // ──────────────────────────────────────────────
     //  Data Structures
     // ──────────────────────────────────────────────
@@ -55,5 +55,73 @@ contract InvoiceNFT is ERC721 {
      */
     constructor() ERC721("InvoiceNFT", "INVN") {
         // _nextTokenId starts at 0; first minted token will be ID 0.
+    }
+
+    // ──────────────────────────────────────────────
+    //  Events
+    // ──────────────────────────────────────────────
+
+    /// @notice Emitted when a new invoice NFT is minted.
+    event InvoiceMinted(
+        uint256 indexed tokenId,
+        address indexed creator,
+        address indexed buyer,
+        uint256 invoiceAmount,
+        string  dueDate
+    );
+
+    // ──────────────────────────────────────────────
+    //  Algorithm 1 – mintInvoice
+    // ──────────────────────────────────────────────
+
+    /**
+     * @notice Mints a new invoice NFT to the caller (supplier).
+     * @dev    Implements Algorithm 1 from the IEEE paper:
+     *         1. Verify the CID has not been used before (no duplicates).
+     *         2. Verify supplier (msg.sender) ≠ buyer.
+     *         3. Mint ERC-721 token to the supplier.
+     *         4. Store InvoiceMetadata with isApproved = false,
+     *            forSale = false, and currPrice = invoiceAmount.
+     *         5. Mark the CID as used.
+     *
+     * @param _cid           IPFS content identifier for the invoice document.
+     * @param _buyer         Address of the party obligated to pay the invoice.
+     * @param _invoiceAmount Face value of the invoice (in wei).
+     * @param _dueDate       Payment due-date (ISO-8601 string).
+     * @return tokenId       The ID of the newly minted invoice NFT.
+     */
+    function mintInvoice(
+        string memory _cid,
+        address _buyer,
+        uint256 _invoiceAmount,
+        string  memory _dueDate
+    ) external returns (uint256 tokenId) {
+        // Step 1: Prevent duplicate CID minting
+        require(!cidUsed[_cid], "Invoice with this CID already exists");
+
+        // Step 2: Supplier (msg.sender) must not be the buyer
+        require(msg.sender != _buyer, "Supplier and buyer cannot be the same");
+
+        // Step 3: Assign token ID and mint ERC-721 to supplier
+        tokenId = _nextTokenId;
+        _nextTokenId++;
+        _mint(msg.sender, tokenId);
+        _setTokenURI(tokenId, _cid);
+
+        // Step 4: Store InvoiceMetadata on-chain
+        InvoiceNFT_Map[tokenId] = InvoiceMetadata({
+            creator:       msg.sender,
+            buyer:         _buyer,
+            currPrice:     _invoiceAmount,   // currPrice = invoiceAmount
+            invoiceAmount: _invoiceAmount,
+            dueDate:       _dueDate,
+            isApproved:    false,             // Not yet co-signed by buyer
+            forSale:       false              // Not listed for discounting
+        });
+
+        // Step 5: Mark CID as used to prevent future duplicates
+        cidUsed[_cid] = true;
+
+        emit InvoiceMinted(tokenId, msg.sender, _buyer, _invoiceAmount, _dueDate);
     }
 }
