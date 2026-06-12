@@ -206,4 +206,44 @@ contract InvoiceNFT is ERC721URIStorage {
 
         emit InvoiceListedForSale(_tokenId, msg.sender, _price);
     }
+
+    // ──────────────────────────────────────────────
+    //  Algorithm 4 – revokeInvoiceSale
+    // ──────────────────────────────────────────────
+
+    /// @notice Emitted when the owner revokes (delists) an invoice NFT from sale.
+    event InvoiceSaleRevoked(uint256 indexed tokenId, address indexed owner);
+
+    /**
+     * @notice Allows the NFT owner to revoke (delist) an invoice from the
+     *         marketplace, undoing a previous approveInvoiceSale listing.
+     * @dev    Implements Algorithm 4 from the IEEE paper:
+     *         1. Verify that msg.sender is the current owner of the NFT.
+     *         2. Verify the invoice is currently listed for sale.
+     *         3. Reset currPrice back to the original invoiceAmount.
+     *         4. Set forSale = false.
+     *
+     *         This is the logical inverse of Algorithm 3. After revocation,
+     *         the owner may re-list the invoice at a different price by
+     *         calling approveInvoiceSale again.
+     *
+     * @param _tokenId The ID of the invoice NFT to delist.
+     */
+    function revokeInvoiceSale(uint256 _tokenId) external {
+        InvoiceMetadata storage invoice = InvoiceNFT_Map[_tokenId];
+
+        // Step 1: Only the current NFT owner can revoke the listing
+        require(ownerOf(_tokenId) == msg.sender, "Only the owner can revoke this listing");
+
+        // Step 2: Invoice must currently be listed for sale
+        require(invoice.forSale, "Invoice is not listed for sale");
+
+        // Step 3: Reset the price back to the original invoice amount
+        invoice.currPrice = invoice.invoiceAmount;
+
+        // Step 4: Mark as no longer for sale
+        invoice.forSale = false;
+
+        emit InvoiceSaleRevoked(_tokenId, msg.sender);
+    }
 }
