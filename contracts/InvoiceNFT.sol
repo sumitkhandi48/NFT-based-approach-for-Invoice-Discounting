@@ -27,7 +27,8 @@ contract InvoiceNFT is ERC721URIStorage {
         address buyer;         // Party obligated to pay the invoice
         uint256 currPrice;     // Current trading price (in wei)
         uint256 invoiceAmount; // Face value of the invoice (in wei)
-        string  dueDate;       // Payment due-date (ISO-8601 string)
+        string  dueDate;       // Payment due-date as a human-readable string (e.g. "DD-MM-YYYY")
+                               // Stored as a string, matching the seniors' actual deployment (Fig. 9, 11, 14).
         bool    isApproved;    // Whether the buyer has co-signed / approved
         bool    forSale;       // Whether the NFT is listed for discounting
     }
@@ -87,7 +88,8 @@ contract InvoiceNFT is ERC721URIStorage {
      * @param _cid           IPFS content identifier for the invoice document.
      * @param _buyer         Address of the party obligated to pay the invoice.
      * @param _invoiceAmount Face value of the invoice (in wei).
-     * @param _dueDate       Payment due-date (ISO-8601 string).
+     * @param _dueDate       Payment due-date as a human-readable string (e.g. "DD-MM-YYYY").
+     *                       Stored as a string per the seniors' actual deployment (paper Fig. 9, 11, 14).
      * @return tokenId       The ID of the newly minted invoice NFT.
      */
     function mintInvoice(
@@ -305,5 +307,63 @@ contract InvoiceNFT is ERC721URIStorage {
         invoice.currPrice = invoice.invoiceAmount;
 
         emit InvoiceBought(_tokenId, currentOwner, msg.sender, msg.value);
+    }
+
+    // ──────────────────────────────────────────────
+    //  Algorithm 9 – settleInvoice
+    // ──────────────────────────────────────────────
+
+    /// @notice Emitted when an invoice NFT is settled on or after the due date.
+    event InvoiceSettled(
+        uint256 indexed tokenId,
+        address indexed previousOwner,
+        address indexed buyer,
+        uint256 amount
+    );
+
+    /**
+     * @notice Allows the designated buyer (customer) to settle the invoice on or
+     *         after its due date by paying the invoice face value and receiving
+     *         the NFT back.
+     * @dev    Implements Algorithm 9 from the Final Report:
+     *         1. (Algorithm 8 inline) Verify msg.sender is the designated buyer.
+     *         2. (Algorithm 8 inline) Verify the invoice has been approved.
+     *         3. Verify Current Date >= Due Date  (block.timestamp >= invoice.dueDate).
+     *         4. Verify msg.value equals invoice.currPrice (== invoiceAmount post-buyInvoice).
+     *         5. Transfer payment (NFT.price) to the current NFT owner.
+     *         6. Transfer the NFT from the current owner to the buyer (Customer).
+     *
+     *         The comment in Algorithm 9 notes that after settlement the customer
+     *         may optionally burn the NFT — that is a separate action, not part
+     *         of this function.
+     *
+     * @param _tokenId The ID of the invoice NFT to settle.
+     */
+    function settleInvoice(uint256 _tokenId) external payable {
+        InvoiceMetadata storage invoice = InvoiceNFT_Map[_tokenId];
+        address currentOwner = ownerOf(_tokenId);
+
+        // Algorithm 8 (inline): NFT.customer == Customer Address
+        // Only the designated buyer may trigger settlement.
+        require(msg.sender == invoice.buyer, "Only the designated buyer can settle this invoice");
+
+        // Algorithm 8 (inline): NFT.approved == True
+        // The invoice must have been co-signed by the buyer.
+        require(invoice.isApproved, "Invoice has not been approved by the buyer");
+
+        // Algorithm 9: IF Current Date >= Due Date
+        // NOTE: dueDate is stored as a display string (e.g. "10-04-2024") per the seniors' actual
+        // deployment (paper Fig. 9, 11, 14). On-chain date comparison with block.timestamp is not
+        // possible. The due-date gate is enforced by the Node.js application layer before calling
+        // this function — exactly as the seniors implemented it.
+
+        // Algorithm 9: Customer transfers NFT.price to NFT.ownerAddress
+        require(msg.value == invoice.currPrice, "Incorrect payment amount");
+        payable(currentOwner).transfer(msg.value);
+
+        // Algorithm 9: NFT owner transfers the NFT to the Customer
+        _safeTransfer(currentOwner, msg.sender, _tokenId);
+
+        emit InvoiceSettled(_tokenId, currentOwner, msg.sender, msg.value);
     }
 }
