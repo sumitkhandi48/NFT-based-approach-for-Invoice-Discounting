@@ -246,4 +246,64 @@ contract InvoiceNFT is ERC721URIStorage {
 
         emit InvoiceSaleRevoked(_tokenId, msg.sender);
     }
+
+    // ──────────────────────────────────────────────
+    //  Algorithm 5 – buyInvoice
+    // ──────────────────────────────────────────────
+
+    /// @notice Emitted when a financier purchases an invoice NFT.
+    event InvoiceBought(
+        uint256 indexed tokenId,
+        address indexed previousOwner,
+        address indexed newOwner,
+        uint256 price
+    );
+
+    /**
+     * @notice Allows a financier to buy a listed invoice NFT by sending
+     *         ETH equal to the current asking price.
+     * @dev    Implements Algorithm 5 from the IEEE paper:
+     *         1. Verify the invoice is currently listed for sale.
+     *         2. Verify the caller (financier) is not the current owner.
+     *         3. Verify msg.value equals the current price exactly.
+     *         4. Transfer ETH payment to the current owner (supplier).
+     *         5. Transfer NFT ownership from the owner to the financier.
+     *         6. Set forSale = false.
+     *         7. Reset currPrice back to the original invoiceAmount.
+     *
+     *         The contract acts as a trusted intermediary: it receives
+     *         the ETH from the financier, forwards it to the owner,
+     *         and transfers the NFT using the internal _safeTransfer
+     *         (which bypasses external approval checks).
+     *
+     * @param _tokenId The ID of the invoice NFT to buy.
+     */
+    function buyInvoice(uint256 _tokenId) external payable {
+        InvoiceMetadata storage invoice = InvoiceNFT_Map[_tokenId];
+        address currentOwner = ownerOf(_tokenId);
+
+        // Step 1: Invoice must be listed for sale
+        require(invoice.forSale, "Invoice is not listed for sale");
+
+        // Step 2: Buyer (financier) must not be the current owner
+        require(msg.sender != currentOwner, "Owner cannot buy their own invoice");
+
+        // Step 3: Payment must equal the current price exactly
+        require(msg.value == invoice.currPrice, "Incorrect payment amount");
+
+        // Step 4: Transfer ETH to the current owner (supplier)
+        payable(currentOwner).transfer(msg.value);
+
+        // Step 5: Transfer NFT from current owner to the financier
+        _safeTransfer(currentOwner, msg.sender, _tokenId);
+
+        // Step 6: Mark as no longer for sale
+        invoice.forSale = false;
+
+        // Step 7: Reset currPrice to the original invoice face value
+        //         (Paper Algorithm 5: InvoiceNFT[tokenId].currPrice = invoiceAmount)
+        invoice.currPrice = invoice.invoiceAmount;
+
+        emit InvoiceBought(_tokenId, currentOwner, msg.sender, msg.value);
+    }
 }
