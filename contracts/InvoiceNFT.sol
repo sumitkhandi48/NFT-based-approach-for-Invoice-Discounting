@@ -297,7 +297,7 @@ contract InvoiceNFT is ERC721URIStorage {
         payable(currentOwner).transfer(msg.value);
 
         // Step 5: Transfer NFT from current owner to the financier
-        _safeTransfer(currentOwner, msg.sender, _tokenId);
+        _safeTransfer(currentOwner, msg.sender, _tokenId, "");
 
         // Step 6: Mark as no longer for sale
         invoice.forSale = false;
@@ -362,7 +362,7 @@ contract InvoiceNFT is ERC721URIStorage {
         payable(currentOwner).transfer(msg.value);
 
         // Algorithm 9: NFT owner transfers the NFT to the Customer
-        _safeTransfer(currentOwner, msg.sender, _tokenId);
+        _safeTransfer(currentOwner, msg.sender, _tokenId, "");
 
         emit InvoiceSettled(_tokenId, currentOwner, msg.sender, msg.value);
     }
