@@ -1,10 +1,13 @@
 import { Router } from "express";
 import upload from "../middleware/uploadMiddleware.js";
-import { uploadInvoice } from "../controllers/invoiceController.js";
+import {
+    uploadInvoice,
+    getInvoice,
+} from "../controllers/invoiceController.js";
 
 const router = Router();
 
-// IPFS upload
 router.post("/upload", upload.single("invoice"), uploadInvoice);
+router.get("/:tokenId", getInvoice);
 
 export default router;
