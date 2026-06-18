@@ -24,6 +24,61 @@ export async function uploadInvoice(req, res) {
     }
 }
 
+// POST /api/invoices/mint
+export async function mintInvoice(req, res) {
+    try {
+        const { cid, buyerAddress, invoiceAmount, dueDate } = req.body;
+
+        if (!cid || !buyerAddress || !invoiceAmount || !dueDate) {
+            return res.status(400).json({
+                error: "Missing required fields: cid, buyerAddress, invoiceAmount, dueDate",
+            });
+        }
+
+        const dateRegex = /^\d{2}-\d{2}-\d{4}$/;
+        if (!dateRegex.test(dueDate)) {
+            return res.status(400).json({
+                error: "Invalid due date format. Use DD-MM-YYYY",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Inputs validated. Call mintInvoice() via MetaMask.",
+            params: { cid, buyerAddress, invoiceAmount, dueDate },
+        });
+    } catch (error) {
+        console.error("Mint validation error:", error.message);
+        return res.status(500).json({ error: "Mint validation failed" });
+    }
+}
+
+// POST /api/invoices/sign
+export async function signInvoice(req, res) {
+    try {
+        const { tokenId } = req.body;
+
+        if (tokenId === undefined || tokenId === null) {
+            return res.status(400).json({ error: "Missing required field: tokenId" });
+        }
+
+        const invoice = await getInvoiceMetadata(tokenId);
+
+        if (invoice.isApproved) {
+            return res.status(400).json({ error: "Invoice is already signed" });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Invoice ready to sign. Call signInvoice() via MetaMask.",
+            invoice,
+        });
+    } catch (error) {
+        console.error("Sign validation error:", error.message);
+        return res.status(500).json({ error: "Sign validation failed" });
+    }
+}
+
 // GET /api/invoices/:tokenId
 export async function getInvoice(req, res) {
     try {
