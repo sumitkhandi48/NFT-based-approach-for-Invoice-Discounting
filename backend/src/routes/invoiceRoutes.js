@@ -7,6 +7,7 @@ import {
     listInvoice,
     revokeInvoice,
     buyInvoice,
+    settleInvoice,
     getInvoice,
 } from "../controllers/invoiceController.js";
 
@@ -18,6 +19,7 @@ router.post("/sign", signInvoice);
 router.post("/list", listInvoice);
 router.post("/revoke", revokeInvoice);
 router.post("/buy", buyInvoice);
+router.post("/settle", settleInvoice);
 router.get("/:tokenId", getInvoice);
 
 export default router;

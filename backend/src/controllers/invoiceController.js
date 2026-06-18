@@ -1,5 +1,5 @@
 import { uploadToIPFS } from "../services/ipfsService.js";
-import { getInvoiceMetadata } from "../services/blockchainService.js";
+import { getInvoiceMetadata, validateDueDate } from "../services/blockchainService.js";
 import { unlink } from "fs/promises";
 
 // POST /api/invoices/upload
@@ -163,6 +163,44 @@ export async function buyInvoice(req, res) {
     } catch (error) {
         console.error("Buy validation error:", error.message);
         return res.status(500).json({ error: "Buy validation failed" });
+    }
+}
+
+// POST /api/invoices/settle
+export async function settleInvoice(req, res) {
+    try {
+        const { tokenId } = req.body;
+
+        if (tokenId === undefined) {
+            return res.status(400).json({ error: "Missing required field: tokenId" });
+        }
+
+        const invoice = await getInvoiceMetadata(tokenId);
+
+        if (!invoice.isApproved) {
+            return res.status(400).json({
+                error: "Invoice has not been approved by buyer",
+            });
+        }
+
+        // Algorithm 9 — due date gate enforced here (Node.js layer)
+        const isDue = validateDueDate(invoice.dueDate);
+        if (!isDue) {
+            return res.status(400).json({
+                error: `Invoice is not yet due. Due date: ${invoice.dueDate}`,
+                dueDate: invoice.dueDate,
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Due date validated. Call settleInvoice() via MetaMask.",
+            invoice,
+            priceWei: invoice.currPrice,
+        });
+    } catch (error) {
+        console.error("Settle validation error:", error.message);
+        return res.status(500).json({ error: "Settle validation failed" });
     }
 }
 
