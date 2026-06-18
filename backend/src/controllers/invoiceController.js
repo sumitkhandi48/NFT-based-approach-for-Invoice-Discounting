@@ -79,6 +79,93 @@ export async function signInvoice(req, res) {
     }
 }
 
+// POST /api/invoices/list
+export async function listInvoice(req, res) {
+    try {
+        const { tokenId, price } = req.body;
+
+        if (tokenId === undefined || !price) {
+            return res.status(400).json({
+                error: "Missing required fields: tokenId, price",
+            });
+        }
+
+        const invoice = await getInvoiceMetadata(tokenId);
+
+        if (!invoice.isApproved) {
+            return res.status(400).json({
+                error: "Invoice must be signed by buyer before listing",
+            });
+        }
+
+        if (invoice.forSale) {
+            return res.status(400).json({ error: "Invoice is already listed for sale" });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Invoice ready to list. Call approveInvoiceSale() via MetaMask.",
+            invoice,
+        });
+    } catch (error) {
+        console.error("List validation error:", error.message);
+        return res.status(500).json({ error: "List validation failed" });
+    }
+}
+
+// POST /api/invoices/revoke
+export async function revokeInvoice(req, res) {
+    try {
+        const { tokenId } = req.body;
+
+        if (tokenId === undefined) {
+            return res.status(400).json({ error: "Missing required field: tokenId" });
+        }
+
+        const invoice = await getInvoiceMetadata(tokenId);
+
+        if (!invoice.forSale) {
+            return res.status(400).json({ error: "Invoice is not listed for sale" });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Invoice ready to delist. Call revokeInvoiceSale() via MetaMask.",
+            invoice,
+        });
+    } catch (error) {
+        console.error("Revoke validation error:", error.message);
+        return res.status(500).json({ error: "Revoke validation failed" });
+    }
+}
+
+// POST /api/invoices/buy
+export async function buyInvoice(req, res) {
+    try {
+        const { tokenId } = req.body;
+
+        if (tokenId === undefined) {
+            return res.status(400).json({ error: "Missing required field: tokenId" });
+        }
+
+        const invoice = await getInvoiceMetadata(tokenId);
+
+        if (!invoice.forSale) {
+            return res.status(400).json({ error: "Invoice is not listed for sale" });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Invoice ready to buy. Call buyInvoice() via MetaMask.",
+            invoice,
+            priceWei: invoice.currPrice,
+        });
+    } catch (error) {
+        console.error("Buy validation error:", error.message);
+        return res.status(500).json({ error: "Buy validation failed" });
+    }
+}
+
 // GET /api/invoices/:tokenId
 export async function getInvoice(req, res) {
     try {

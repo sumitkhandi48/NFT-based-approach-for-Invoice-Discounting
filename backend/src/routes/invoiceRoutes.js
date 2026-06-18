@@ -4,6 +4,9 @@ import {
     uploadInvoice,
     mintInvoice,
     signInvoice,
+    listInvoice,
+    revokeInvoice,
+    buyInvoice,
     getInvoice,
 } from "../controllers/invoiceController.js";
 
@@ -12,6 +15,9 @@ const router = Router();
 router.post("/upload", upload.single("invoice"), uploadInvoice);
 router.post("/mint", mintInvoice);
 router.post("/sign", signInvoice);
+router.post("/list", listInvoice);
+router.post("/revoke", revokeInvoice);
+router.post("/buy", buyInvoice);
 router.get("/:tokenId", getInvoice);
 
 export default router;
