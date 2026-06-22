@@ -237,3 +237,49 @@ a.role-card:hover {
     margin-bottom: 20px;
     font-size: 0.95rem;
 }
+
+/* Navbar wallet */
+.navbar-wallet {
+    display: flex;
+    align-items: center;
+}
+
+.wallet-connected {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wallet-address {
+    color: #a0aec0;
+    font-size: 0.9rem;
+}
+
+.btn-connect {
+    background-color: #2563eb;
+    color: #ffffff;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
+.btn-connect:hover {
+    background-color: #1d4ed8;
+}
+
+.btn-disconnect {
+    background-color: #dc2626;
+    color: #ffffff;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
+.btn-disconnect:hover {
+    background-color: #b91c1c;
+}
+
+/* Connected message */
+.connected-msg {
+    color: #16a34a;
+    font-size: 1rem;
+    margin-bottom: 8px;
+}

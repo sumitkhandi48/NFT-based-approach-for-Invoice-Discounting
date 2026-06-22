@@ -1,13 +1,36 @@
 import { Link } from "react-router-dom";
+import { useWallet } from "../context/WalletContext.jsx";
 
 function Dashboard() {
+    const { account, network, connectWallet } = useWallet();
+
     return (
         <div className="page">
             <h1>Dashboard</h1>
 
             <div className="wallet-info">
-                <p><strong>Wallet Address:</strong> Not connected</p>
-                <p><strong>Network:</strong> Not connected</p>
+                {account ? (
+                    <>
+                        <p>
+                            <strong>Wallet Address:</strong> {account}
+                        </p>
+                        <p>
+                            <strong>Network:</strong> {network}
+                        </p>
+                    </>
+                ) : (
+                    <>
+                        <p>
+                            <strong>Wallet Address:</strong> Not connected
+                        </p>
+                        <p>
+                            <strong>Network:</strong> Not connected
+                        </p>
+                        <button className="btn btn-primary" onClick={connectWallet}>
+                            Connect Wallet
+                        </button>
+                    </>
+                )}
             </div>
 
             <h2>Select Your Role</h2>

@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
+import { useWallet } from "../context/WalletContext.jsx";
 
 function Home() {
+    const { account, connectWallet } = useWallet();
+
     return (
         <div className="page">
             <div className="hero">
@@ -10,7 +13,15 @@ function Home() {
                     enabling suppliers, buyers, and financiers to securely manage
                     invoice discounting on the blockchain.
                 </p>
-                <button className="btn btn-primary">Connect Wallet</button>
+                {account ? (
+                    <p className="connected-msg">
+                        ✅ Wallet Connected: {account.slice(0, 6)}...{account.slice(-4)}
+                    </p>
+                ) : (
+                    <button className="btn btn-primary" onClick={connectWallet}>
+                        Connect Wallet
+                    </button>
+                )}
             </div>
 
             <div className="info-grid">
