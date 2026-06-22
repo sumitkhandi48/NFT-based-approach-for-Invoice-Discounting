@@ -217,3 +217,23 @@ body {
     font-size: 0.85rem;
     border-top: 1px solid #e0e3e8;
 }
+
+/* Role card as link */
+a.role-card {
+    display: block;
+    text-decoration: none;
+    color: #1a1a1a;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+a.role-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: #2563eb;
+}
+
+/* Subtitle small */
+.subtitle-small {
+    color: #6b7280;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+}
