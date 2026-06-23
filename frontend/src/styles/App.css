@@ -283,3 +283,33 @@ a.role-card:hover {
     font-size: 1rem;
     margin-bottom: 8px;
 }
+
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.badge-green {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+.badge-blue {
+    background-color: #dbeafe;
+    color: #2563eb;
+}
+
+.badge-grey {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+/* Error message */
+.error-msg {
+    color: #dc2626;
+    font-size: 1rem;
+}
