@@ -313,3 +313,65 @@ a.role-card:hover {
     color: #dc2626;
     font-size: 1rem;
 }
+
+/* Forms */
+.form-group {
+    margin-bottom: 14px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #1e2a38;
+    font-size: 0.9rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    color: #1a1a1a;
+    background-color: #ffffff;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #2563eb;
+}
+
+.file-input {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+}
+
+.form-msg {
+    margin-top: 10px;
+    font-size: 0.9rem;
+    color: #1a1a1a;
+}
+
+/* Invoice table */
+.invoice-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+}
+
+.invoice-table th {
+    text-align: left;
+    padding: 10px 8px;
+    background-color: #f3f4f6;
+    border-bottom: 2px solid #e0e3e8;
+    font-size: 0.9rem;
+    color: #1e2a38;
+}
+
+.invoice-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #e0e3e8;
+    font-size: 0.9rem;
+}
