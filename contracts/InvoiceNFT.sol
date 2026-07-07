@@ -6,8 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 /**
  * @title InvoiceNFT
  * @notice ERC-721 contract for tokenising trade invoices as NFTs.
- *         Based on the PES University IEEE paper on NFT-based Invoice Discounting.
- *
+ *         
  *         Each minted token represents a single invoice whose metadata
  *         (buyer, amount, due-date, approval / sale status, etc.) is
  *         stored on-chain via the InvoiceMetadata struct.
