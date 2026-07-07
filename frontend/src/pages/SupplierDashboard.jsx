@@ -3,12 +3,13 @@ import { Link } from "react-router-dom";
 import { ethers } from "ethers";
 import { useWallet } from "../context/WalletContext.jsx";
 import { useContract } from "../context/ContractContext.jsx";
+import { getFriendlyErrorMessage } from "../utils/errorMessage.js";
 
 const BACKEND_URL = "http://localhost:3000";
 
 function SupplierDashboard() {
     const { account, provider } = useWallet();
-    const { getReadOnlyContract, getSignerContract } = useContract();
+    const { getSignerContract } = useContract();
 
     const [file, setFile] = useState(null);
     const [cid, setCid] = useState("");
@@ -33,33 +34,33 @@ function SupplierDashboard() {
     const [revoking, setRevoking] = useState(false);
     const [revokeMsg, setRevokeMsg] = useState("");
 
+    const [walletAddress, setWalletAddress] = useState("");
+    const [walletBalance, setWalletBalance] = useState("0");
+
     async function fetchInvoices() {
         if (!account) return;
         setLoadingInvoices(true);
         try {
-            const contract = getReadOnlyContract();
-            const results = [];
+            const res = await fetch(`${BACKEND_URL}/api/invoices/summary`);
+            const data = await res.json();
 
-            for (let i = 0; i < 50; i++) {
-                try {
-                    const owner = await contract.ownerOf(i);
-                    const data = await contract.InvoiceNFT_Map(i);
-                    if (data.creator.toLowerCase() === account.toLowerCase()) {
-                        results.push({
-                            tokenId: i,
-                            buyer: data.buyer,
-                            invoiceAmount: ethers.formatEther(data.invoiceAmount),
-                            currPrice: ethers.formatEther(data.currPrice),
-                            dueDate: data.dueDate,
-                            isApproved: data.isApproved,
-                            forSale: data.forSale,
-                            owner,
-                        });
-                    }
-                } catch {
-                    break;
-                }
+            if (!res.ok) {
+                throw new Error(data.error || "Failed to fetch invoices.");
             }
+
+            const results = (data.invoices || [])
+                .filter((invoice) => invoice.creator.toLowerCase() === account.toLowerCase())
+                .map((invoice) => ({
+                    tokenId: invoice.tokenId,
+                    buyer: invoice.buyer,
+                    invoiceAmount: invoice.invoiceAmount,
+                    currPrice: invoice.currPrice,
+                    dueDate: invoice.dueDate,
+                    isApproved: invoice.isApproved,
+                    forSale: invoice.forSale,
+                    currentOwner: invoice.currentOwner,
+                }));
+
             setInvoices(results);
         } catch (err) {
             console.error("Failed to fetch invoices:", err.message);
@@ -68,9 +69,25 @@ function SupplierDashboard() {
         }
     }
 
+    async function refreshBalances() {
+        if (!account || !provider) {
+            setWalletAddress("");
+            setWalletBalance("0");
+            return;
+        }
+
+        const signer = await provider.getSigner();
+        const activeAddress = await signer.getAddress();
+        const walletWei = await provider.getBalance(activeAddress);
+
+        setWalletAddress(activeAddress);
+        setWalletBalance(ethers.formatEther(walletWei));
+    }
+
     useEffect(() => {
         fetchInvoices();
-    }, [account]);
+        refreshBalances();
+    }, [account, provider]);
 
     async function handleUpload() {
         if (!file) return setUploadMsg("Please select a file.");
@@ -88,10 +105,10 @@ function SupplierDashboard() {
                 setCid(data.cid);
                 setUploadMsg(`✅ Uploaded. CID: ${data.cid}`);
             } else {
-                setUploadMsg(`❌ Upload failed: ${data.error}`);
+                setUploadMsg(`❌ Upload failed: ${getFriendlyErrorMessage(data.error)}`);
             }
         } catch (err) {
-            setUploadMsg(`❌ Error: ${err.message}`);
+            setUploadMsg(`❌ ${getFriendlyErrorMessage(err, "Upload failed.")}`);
         } finally {
             setUploading(false);
         }
@@ -110,16 +127,21 @@ function SupplierDashboard() {
             const contract = getSignerContract(signer);
             const amountWei = ethers.parseEther(mintAmount);
             const tx = await contract.mintInvoice(cid, mintBuyer, amountWei, mintDueDate);
-            await tx.wait();
-            setMintMsg("✅ Invoice NFT minted successfully!");
+            console.log("Transaction Hash:", tx.hash);
+            console.log("Waiting for confirmation...");
+            const receipt = await tx.wait();
+            console.log("Confirmed in block:", receipt.blockNumber);
+            setMintMsg(`✅ Invoice NFT minted successfully! Tx: ${tx.hash}`);
             setMintBuyer("");
             setMintAmount("");
             setMintDueDate("");
             setCid("");
             setFile(null);
             fetchInvoices();
+            refreshBalances();
         } catch (err) {
-            setMintMsg(`❌ Error: ${err.message}`);
+            console.error("Mint transaction failed:", err);
+            setMintMsg(`❌ ${getFriendlyErrorMessage(err, "Minting failed.")}`);
         } finally {
             setMinting(false);
         }
@@ -136,13 +158,18 @@ function SupplierDashboard() {
             const contract = getSignerContract(signer);
             const priceWei = ethers.parseEther(listPrice);
             const tx = await contract.approveInvoiceSale(listTokenId, priceWei);
-            await tx.wait();
-            setListMsg("✅ Invoice listed for sale!");
+            console.log("Transaction Hash:", tx.hash);
+            console.log("Waiting for confirmation...");
+            const receipt = await tx.wait();
+            console.log("Confirmed in block:", receipt.blockNumber);
+            setListMsg(`✅ Invoice listed for sale! Tx: ${tx.hash}`);
             setListTokenId("");
             setListPrice("");
             fetchInvoices();
+            refreshBalances();
         } catch (err) {
-            setListMsg(`❌ Error: ${err.message}`);
+            console.error("List transaction failed:", err);
+            setListMsg(`❌ ${getFriendlyErrorMessage(err, "Listing failed.")}`);
         } finally {
             setListing(false);
         }
@@ -158,12 +185,17 @@ function SupplierDashboard() {
             const signer = await provider.getSigner();
             const contract = getSignerContract(signer);
             const tx = await contract.revokeInvoiceSale(revokeTokenId);
-            await tx.wait();
-            setRevokeMsg("✅ Listing revoked successfully!");
+            console.log("Transaction Hash:", tx.hash);
+            console.log("Waiting for confirmation...");
+            const receipt = await tx.wait();
+            console.log("Confirmed in block:", receipt.blockNumber);
+            setRevokeMsg(`✅ Listing revoked successfully! Tx: ${tx.hash}`);
             setRevokeTokenId("");
             fetchInvoices();
+            refreshBalances();
         } catch (err) {
-            setRevokeMsg(`❌ Error: ${err.message}`);
+            console.error("Revoke transaction failed:", err);
+            setRevokeMsg(`❌ ${getFriendlyErrorMessage(err, "Revoking failed.")}`);
         } finally {
             setRevoking(false);
         }
@@ -184,6 +216,20 @@ function SupplierDashboard() {
         <div className="page">
             <h1>Supplier Dashboard</h1>
             <p className="subtitle-small">Connected: {account}</p>
+
+            <section className="section-card balance-card">
+                <h2>Live Balances</h2>
+                <div className="balance-grid">
+                    <div className="balance-item">
+                        <span className="balance-label">Wallet</span>
+                        <strong>{walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Not connected"}</strong>
+                    </div>
+                    <div className="balance-item">
+                        <span className="balance-label">Wallet Balance</span>
+                        <strong>{walletBalance} ETH</strong>
+                    </div>
+                </div>
+            </section>
 
             <section className="section-card">
                 <h2>Step 1 — Upload Invoice to IPFS</h2>
@@ -260,7 +306,6 @@ function SupplierDashboard() {
                     <table className="invoice-table">
                         <thead>
                             <tr>
-                                <th>Token ID</th>
                                 <th>Amount</th>
                                 <th>Due Date</th>
                                 <th>Approved</th>

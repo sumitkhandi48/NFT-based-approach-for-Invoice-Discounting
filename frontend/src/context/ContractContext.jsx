@@ -1,19 +1,21 @@
 import { createContext, useContext } from "react";
 import { ethers } from "ethers";
-import { useWallet } from "./WalletContext.jsx";
 import InvoiceNFTArtifact from "../InvoiceNFT.json";
 
 const CONTRACT_ADDRESS = "0xe3c505901332ac488B29fC8dAe2427B5A9cd4f9a";
 const ABI = InvoiceNFTArtifact.abi;
+const GANACHE_RPC_URL = "http://127.0.0.1:8545";
 
 const ContractContext = createContext(null);
 
 export function ContractProvider({ children }) {
-    const { provider } = useWallet();
-
     function getReadOnlyContract() {
-        const readProvider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+        const readProvider = new ethers.JsonRpcProvider(GANACHE_RPC_URL);
         return new ethers.Contract(CONTRACT_ADDRESS, ABI, readProvider);
+    }
+
+    function getReadOnlyProvider() {
+        return new ethers.JsonRpcProvider(GANACHE_RPC_URL);
     }
 
     function getSignerContract(signer) {
@@ -21,7 +23,9 @@ export function ContractProvider({ children }) {
     }
 
     return (
-        <ContractContext.Provider value={{ getReadOnlyContract, getSignerContract, CONTRACT_ADDRESS, ABI }}>
+        <ContractContext.Provider
+            value={{ getReadOnlyContract, getReadOnlyProvider, getSignerContract, CONTRACT_ADDRESS, ABI }}
+        >
             {children}
         </ContractContext.Provider>
     );

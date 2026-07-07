@@ -1,11 +1,11 @@
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { ethers } from "ethers";
-import { useContract } from "../context/ContractContext.jsx";
+import { getFriendlyErrorMessage } from "../utils/errorMessage.js";
+
+const BACKEND_URL = "http://localhost:3000";
 
 function InvoiceDetails() {
     const { tokenId } = useParams();
-    const { getReadOnlyContract } = useContract();
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -14,25 +14,18 @@ function InvoiceDetails() {
         async function fetchInvoice() {
             try {
                 setLoading(true);
-                const contract = getReadOnlyContract();
-                const data = await contract.InvoiceNFT_Map(tokenId);
-                const tokenURI = await contract.tokenURI(tokenId);
-                const owner = await contract.ownerOf(tokenId);
+                const res = await fetch(`${BACKEND_URL}/api/invoices/${tokenId}`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || "Invoice not found.");
+                }
 
                 setInvoice({
-                    tokenId,
-                    creator: data.creator,
-                    buyer: data.buyer,
-                    currPrice: ethers.formatEther(data.currPrice),
-                    invoiceAmount: ethers.formatEther(data.invoiceAmount),
-                    dueDate: data.dueDate,
-                    isApproved: data.isApproved,
-                    forSale: data.forSale,
-                    tokenURI,
-                    owner,
+                    ...data.invoice,
                 });
             } catch (err) {
-                setError("Invoice not found or could not be fetched.");
+                setError(getFriendlyErrorMessage(err, "Invoice not found or could not be fetched."));
             } finally {
                 setLoading(false);
             }
@@ -59,14 +52,14 @@ function InvoiceDetails() {
                         <tr>
                             <td>CID (IPFS)</td>
                             <td>
-                                <a
-                                    href={`https://gateway.pinata.cloud/ipfs/${invoice.tokenURI}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                >
-                                    {invoice.tokenURI}
+                                <a href={invoice.ipfsUrl} target="_blank" rel="noreferrer">
+                                    {invoice.ipfsCID}
                                 </a>
                             </td>
+                        </tr>
+                        <tr>
+                            <td>Source</td>
+                            <td>{invoice.source || "blockchain"}</td>
                         </tr>
                         <tr>
                             <td>Invoice Amount</td>
@@ -90,7 +83,19 @@ function InvoiceDetails() {
                         </tr>
                         <tr>
                             <td>Current Owner</td>
-                            <td>{invoice.owner}</td>
+                            <td>{invoice.currentOwner}</td>
+                        </tr>
+                        <tr>
+                            <td>Stage</td>
+                            <td>{invoice.stage}</td>
+                        </tr>
+                        <tr>
+                            <td>Mint Tx Hash</td>
+                            <td>{invoice.mintTxHash || "N/A"}</td>
+                        </tr>
+                        <tr>
+                            <td>Mint Block</td>
+                            <td>{invoice.mintBlock ?? "N/A"}</td>
                         </tr>
                         <tr>
                             <td>Approved Status</td>

@@ -3,12 +3,13 @@ import { Link } from "react-router-dom";
 import { ethers } from "ethers";
 import { useWallet } from "../context/WalletContext.jsx";
 import { useContract } from "../context/ContractContext.jsx";
+import { getFriendlyErrorMessage } from "../utils/errorMessage.js";
 
 const BACKEND_URL = "http://localhost:3000";
 
 function BuyerDashboard() {
     const { account, provider } = useWallet();
-    const { getReadOnlyContract, getSignerContract } = useContract();
+    const { getSignerContract, getReadOnlyProvider, CONTRACT_ADDRESS } = useContract();
 
     const [invoices, setInvoices] = useState([]);
     const [loadingInvoices, setLoadingInvoices] = useState(false);
@@ -21,38 +22,35 @@ function BuyerDashboard() {
     const [settling, setSettling] = useState(false);
     const [settleMsg, setSettleMsg] = useState("");
 
+    const [walletAddress, setWalletAddress] = useState("");
+    const [walletBalance, setWalletBalance] = useState("0");
+
     async function fetchAssignedInvoices() {
         if (!account) return;
         setLoadingInvoices(true);
         try {
-            const contract = getReadOnlyContract();
-            const results = [];
+            const res = await fetch(`${BACKEND_URL}/api/invoices/summary`);
+            const data = await res.json();
 
-            for (let i = 0; i < 50; i++) {
-                try {
-                    const owner = await contract.ownerOf(i);
-                    const data = await contract.InvoiceNFT_Map(i);
-                    if (data.buyer.toLowerCase() === account.toLowerCase()) {
-                        // isSettled = buyer is current owner AND invoice is approved
-                        const isSettled =
-                            owner.toLowerCase() === account.toLowerCase() && data.isApproved;
-
-                        results.push({
-                            tokenId: i,
-                            creator: data.creator,
-                            invoiceAmount: ethers.formatEther(data.invoiceAmount),
-                            currPrice: ethers.formatEther(data.currPrice),
-                            dueDate: data.dueDate,
-                            isApproved: data.isApproved,
-                            forSale: data.forSale,
-                            owner,
-                            isSettled,
-                        });
-                    }
-                } catch {
-                    break;
-                }
+            if (!res.ok) {
+                throw new Error(data.error || "Failed to fetch invoices.");
             }
+
+            const results = (data.invoices || [])
+                .filter((invoice) => invoice.buyer.toLowerCase() === account.toLowerCase())
+                .map((invoice) => ({
+                    tokenId: invoice.tokenId,
+                    creator: invoice.creator,
+                    invoiceAmount: invoice.invoiceAmount,
+                    currPrice: invoice.currPrice,
+                    dueDate: invoice.dueDate,
+                    isApproved: invoice.isApproved,
+                    forSale: invoice.forSale,
+                    currentOwner: invoice.currentOwner,
+                    isSettled:
+                        invoice.currentOwner.toLowerCase() === account.toLowerCase() && invoice.isApproved,
+                }));
+
             setInvoices(results);
         } catch (err) {
             console.error("Failed to fetch invoices:", err.message);
@@ -61,9 +59,25 @@ function BuyerDashboard() {
         }
     }
 
+    async function refreshBalances() {
+        if (!account || !provider) {
+            setWalletAddress("");
+            setWalletBalance("0");
+            return;
+        }
+
+        const signer = await provider.getSigner();
+        const activeAddress = await signer.getAddress();
+        const walletWei = await provider.getBalance(activeAddress);
+
+        setWalletAddress(activeAddress);
+        setWalletBalance(ethers.formatEther(walletWei));
+    }
+
     useEffect(() => {
         fetchAssignedInvoices();
-    }, [account]);
+        refreshBalances();
+    }, [account, provider]);
 
     async function handleSign() {
         if (!account) return setSignMsg("Please connect your wallet.");
@@ -75,12 +89,17 @@ function BuyerDashboard() {
             const signer = await provider.getSigner();
             const contract = getSignerContract(signer);
             const tx = await contract.signInvoice(signTokenId);
-            await tx.wait();
-            setSignMsg("✅ Invoice signed successfully!");
+            console.log("Transaction Hash:", tx.hash);
+            console.log("Waiting for confirmation...");
+            const receipt = await tx.wait();
+            console.log("Confirmed in block:", receipt.blockNumber);
+            setSignMsg(`✅ Invoice signed successfully! Tx: ${tx.hash}`);
             setSignTokenId("");
             fetchAssignedInvoices();
+            refreshBalances();
         } catch (err) {
-            setSignMsg(`❌ Error: ${err.message}`);
+            console.error("Sign transaction failed:", err);
+            setSignMsg(`❌ ${getFriendlyErrorMessage(err, "Signing failed.")}`);
         } finally {
             setSigning(false);
         }
@@ -107,19 +126,52 @@ function BuyerDashboard() {
             const data = await res.json();
 
             if (!data.success) {
-                return setSettleMsg(`❌ ${data.error}`);
+                return setSettleMsg(`❌ ${getFriendlyErrorMessage(data.error, "Settlement failed.")}`);
             }
 
             const signer = await provider.getSigner();
+            const signerAddress = await signer.getAddress();
             const contract = getSignerContract(signer);
-            const priceWei = BigInt(data.invoice.currPrice);
+            const priceWei = ethers.parseEther(data.invoice.currPrice);
+            const readProvider = getReadOnlyProvider();
+
+            console.log("Connected Account:", account);
+            console.log("Signer Address:", signerAddress);
+
+            const buyerBefore = await readProvider.getBalance(signerAddress);
+            const ownerBefore = await readProvider.getBalance(data.invoice.currentOwner);
+            const contractBefore = await readProvider.getBalance(CONTRACT_ADDRESS);
+
+            console.log("[settleInvoice] tokenId:", settleTokenId);
+            console.log("[settleInvoice] invoice price (ETH):", data.invoice.currPrice);
+            console.log("[settleInvoice] msg.value (wei):", priceWei.toString());
+            console.log("[settleInvoice] buyer balance before:", ethers.formatEther(buyerBefore));
+            console.log("[settleInvoice] supplier balance before:", ethers.formatEther(ownerBefore));
+            console.log("[settleInvoice] contract balance before:", ethers.formatEther(contractBefore));
+
             const tx = await contract.settleInvoice(settleTokenId, { value: priceWei });
-            await tx.wait();
-            setSettleMsg("✅ Invoice settled successfully!");
+            console.log("Transaction Hash:", tx.hash);
+            console.log("Waiting for confirmation...");
+            const receipt = await tx.wait();
+            console.log("Confirmed in block:", receipt.blockNumber);
+
+            const buyerAfter = await readProvider.getBalance(signerAddress);
+            const ownerAfter = await readProvider.getBalance(data.invoice.currentOwner);
+            const contractAfter = await readProvider.getBalance(CONTRACT_ADDRESS);
+
+            console.log("[settleInvoice] tx hash:", tx.hash);
+            console.log("[settleInvoice] gas used:", receipt?.gasUsed?.toString?.() ?? "n/a");
+            console.log("[settleInvoice] buyer balance after:", ethers.formatEther(buyerAfter));
+            console.log("[settleInvoice] supplier balance after:", ethers.formatEther(ownerAfter));
+            console.log("[settleInvoice] contract balance after:", ethers.formatEther(contractAfter));
+
+            setSettleMsg(`✅ Invoice settled successfully! Tx: ${tx.hash}`);
             setSettleTokenId("");
             fetchAssignedInvoices();
+            refreshBalances();
         } catch (err) {
-            setSettleMsg(`❌ Error: ${err.message}`);
+            console.error("Settle transaction failed:", err);
+            setSettleMsg(`❌ ${getFriendlyErrorMessage(err, "Settlement failed.")}`);
         } finally {
             setSettling(false);
         }
@@ -140,6 +192,20 @@ function BuyerDashboard() {
         <div className="page">
             <h1>Buyer Dashboard</h1>
             <p className="subtitle-small">Connected: {account}</p>
+
+            <section className="section-card balance-card">
+                <h2>Live Balances</h2>
+                <div className="balance-grid">
+                    <div className="balance-item">
+                        <span className="balance-label">Connected Wallet Address</span>
+                        <strong>{walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Not connected"}</strong>
+                    </div>
+                    <div className="balance-item">
+                        <span className="balance-label">Wallet Balance</span>
+                        <strong>{walletBalance} ETH</strong>
+                    </div>
+                </div>
+            </section>
 
             {/* Assigned Invoices */}
             <section className="section-card">
