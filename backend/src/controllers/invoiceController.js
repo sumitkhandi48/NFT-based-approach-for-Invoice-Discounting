@@ -1,5 +1,10 @@
 import { uploadToIPFS } from "../services/ipfsService.js";
-import { getInvoiceMetadata, validateDueDate } from "../services/blockchainService.js";
+import { ethers } from "ethers";
+import {
+    getBlockchainSummary,
+    getInvoiceMetadata,
+    validateDueDate,
+} from "../services/blockchainService.js";
 import { unlink } from "fs/promises";
 
 // POST /api/invoices/upload
@@ -158,7 +163,7 @@ export async function buyInvoice(req, res) {
             success: true,
             message: "Invoice ready to buy. Call buyInvoice() via MetaMask.",
             invoice,
-            priceWei: invoice.currPrice,
+            priceWei: ethers.parseEther(invoice.currPrice).toString(),
         });
     } catch (error) {
         console.error("Buy validation error:", error.message);
@@ -196,7 +201,7 @@ export async function settleInvoice(req, res) {
             success: true,
             message: "Due date validated. Call settleInvoice() via MetaMask.",
             invoice,
-            priceWei: invoice.currPrice,
+            priceWei: ethers.parseEther(invoice.currPrice).toString(),
         });
     } catch (error) {
         console.error("Settle validation error:", error.message);
@@ -217,5 +222,17 @@ export async function getInvoice(req, res) {
     } catch (error) {
         console.error("Get invoice error:", error.message);
         return res.status(404).json({ error: "Invoice not found" });
+    }
+}
+
+// GET /api/invoices/summary
+export async function getBlockchainInvoices(req, res) {
+    try {
+        const summary = await getBlockchainSummary();
+
+        return res.status(200).json(summary);
+    } catch (error) {
+        console.error("Blockchain summary error:", error.message);
+        return res.status(500).json({ error: "Failed to fetch blockchain summary" });
     }
 }
