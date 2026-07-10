@@ -306,6 +306,7 @@ function SupplierDashboard() {
                     <table className="invoice-table">
                         <thead>
                             <tr>
+                                <th>Token ID</th>
                                 <th>Amount</th>
                                 <th>Due Date</th>
                                 <th>Approved</th>
