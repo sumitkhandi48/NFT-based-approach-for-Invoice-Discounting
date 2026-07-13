@@ -12,3 +12,11 @@ types/
 backend/node_modules/
 backend/.env
 backend/uploads/
+
+venv/
+__pycache__/
+*.pyc
+.env
+backend/.env
+frontend/.env
+node_modules/

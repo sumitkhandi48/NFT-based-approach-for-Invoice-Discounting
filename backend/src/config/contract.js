@@ -3,6 +3,7 @@ import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import provider from "./blockchain.js";
+import { ACTIVE_NETWORK } from "./network.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,7 +15,8 @@ const artifactPath = join(
 const artifact = JSON.parse(readFileSync(artifactPath, "utf-8"));
 const abi = artifact.abi;
 
-const contractAddress = process.env.CONTRACT_ADDRESS;
+const contractAddress =
+    ACTIVE_NETWORK.contractAddress;
 
 const contract = new ethers.Contract(contractAddress, abi, provider);
 
