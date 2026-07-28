@@ -1,22 +1,28 @@
-node_modules/
-.env
-artifacts/
-cache/
-dist/
-build/
-coverage/
-*.pdf
-types/
+# -----------------------
+# ZKP / Groth16
+# -----------------------
 
-# Backend specific
-backend/node_modules/
-backend/.env
-backend/uploads/
+# Trusted setup
+zk/*.ptau
 
-venv/
-__pycache__/
-*.pyc
-.env
-backend/.env
-frontend/.env
-node_modules/
+# Generated proving/verification keys
+zk/keys/
+
+# Generated witnesses
+zk/witness/
+
+# Generated proofs
+zk/proofs/
+
+# Generated circuit artifacts
+zk/build/
+
+# Circom compiled files
+*.r1cs
+*.sym
+*.wasm
+*.zkey
+*.wtns
+verification_key.json
+proof.json
+public.json
