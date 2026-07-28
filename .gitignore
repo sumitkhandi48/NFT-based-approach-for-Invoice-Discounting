@@ -1,28 +1,42 @@
-# -----------------------
-# ZKP / Groth16
-# -----------------------
+# Dependencies
+node_modules/
+backend/node_modules/
 
-# Trusted setup
+# Hardhat
+artifacts/
+cache/
+types/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Environment
+.env
+backend/.env
+frontend/.env
+
+# PDFs
+*.pdf
+
+# Test output
+test_output.txt
+
+# Sample data (if not needed in repo)
+sample_invoices/
+
+# Circom
+circom/
+
+# ZKP
 zk/*.ptau
-
-# Generated proving/verification keys
-zk/keys/
-
-# Generated witnesses
-zk/witness/
-
-# Generated proofs
-zk/proofs/
-
-# Generated circuit artifacts
 zk/build/
-
-# Circom compiled files
+zk/proofs/
+zk/witness/
+zk/keys/
 *.r1cs
 *.sym
 *.wasm
 *.zkey
 *.wtns
-verification_key.json
-proof.json
-public.json
