@@ -7,10 +7,47 @@ import { getFriendlyErrorMessage } from "../utils/errorMessage.js";
 
 const BACKEND_URL = "http://localhost:3000";
 
-function FinancierDashboard() {
-    const { account, provider } = useWallet();
-    const { getSignerContract, getReadOnlyProvider, CONTRACT_ADDRESS } = useContract();
+// ─── helpers ──────────────────────────────────────────────────────────────────
+function scoreColour(score) {
+    if (score >= 80) return "#22c55e";
+    if (score >= 60) return "#f59e0b";
+    return "#ef4444";
+}
 
+function scoreLabel(score) {
+    if (score >= 80) return "Excellent";
+    if (score >= 65) return "Good";
+    if (score >= 50) return "Fair";
+    return "Poor";
+}
+
+// Small inline badge used in the table column
+function ScoreBadge({ score }) {
+    if (score === null) {
+        return <span style={{ color: "#9ca3af", fontSize: "0.8rem" }}>…</span>;
+    }
+    return (
+        <span style={{
+            display: "inline-block",
+            padding: "2px 8px",
+            borderRadius: "12px",
+            background: scoreColour(score),
+            color: "#fff",
+            fontWeight: 700,
+            fontSize: "0.8rem",
+            minWidth: "36px",
+            textAlign: "center",
+        }}>
+            {score}
+        </span>
+    );
+}
+
+function FinancierDashboard() {
+    const { account, provider, roles } = useWallet();
+    const { getSignerContract, getReadOnlyContract, getReadOnlyProvider, CONTRACT_ADDRESS } = useContract();
+
+    // ── existing state ──────────────────────────────────────────────────────
     const [invoices, setInvoices] = useState([]);
     const [loadingInvoices, setLoadingInvoices] = useState(false);
 
@@ -21,15 +58,20 @@ function FinancierDashboard() {
     const [walletAddress, setWalletAddress] = useState("");
     const [walletBalance, setWalletBalance] = useState("0");
 
+    // ── NEW: financier's own credit profile ────────────────────────────────
+    const [creditProfile, setCreditProfile] = useState(null);
+    const [loadingCredit, setLoadingCredit] = useState(false);
+
+    // ── NEW: per-invoice buyer credit scores { tokenId: score|null } ────────
+    const [buyerScores, setBuyerScores] = useState({});
+
+    // ── fetch helpers ───────────────────────────────────────────────────────
     async function fetchListedInvoices() {
         setLoadingInvoices(true);
         try {
             const res = await fetch(`${BACKEND_URL}/api/invoices/summary`);
             const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.error || "Failed to fetch invoices.");
-            }
+            if (!res.ok) throw new Error(data.error || "Failed to fetch invoices.");
 
             const results = (data.invoices || [])
                 .filter((invoice) => invoice.forSale)
@@ -45,10 +87,42 @@ function FinancierDashboard() {
                 }));
 
             setInvoices(results);
+
+            // NEW: fetch buyer credit scores for all listed invoices in parallel
+            fetchBuyerScores(results);
         } catch (err) {
             console.error("Failed to fetch listed invoices:", err.message);
         } finally {
             setLoadingInvoices(false);
+        }
+    }
+
+    // ── NEW: bulk-fetch buyer credit scores ─────────────────────────────────
+    async function fetchBuyerScores(invoiceList) {
+        if (!invoiceList || invoiceList.length === 0) return;
+        try {
+            const contract = getReadOnlyContract();
+            // Initialise all to null (loading state)
+            const initial = {};
+            invoiceList.forEach((inv) => { initial[inv.tokenId] = null; });
+            setBuyerScores(initial);
+
+            const scores = await Promise.all(
+                invoiceList.map(async (inv) => {
+                    try {
+                        const score = await contract.getCreditScore(inv.buyer);
+                        return { tokenId: inv.tokenId, score: Number(score) };
+                    } catch {
+                        return { tokenId: inv.tokenId, score: 75 }; // default fallback
+                    }
+                })
+            );
+
+            const scoreMap = {};
+            scores.forEach(({ tokenId, score }) => { scoreMap[tokenId] = score; });
+            setBuyerScores(scoreMap);
+        } catch (err) {
+            console.error("Failed to fetch buyer scores:", err.message);
         }
     }
 
@@ -58,20 +132,41 @@ function FinancierDashboard() {
             setWalletBalance("0");
             return;
         }
-
         const signer = await provider.getSigner();
         const activeAddress = await signer.getAddress();
         const walletWei = await provider.getBalance(activeAddress);
-
         setWalletAddress(activeAddress);
         setWalletBalance(ethers.formatEther(walletWei));
+    }
+
+    // ── Financier Investment Analytics ──────────────────────────────────────
+    async function fetchCreditProfile() {
+        if (!account) return;
+        setLoadingCredit(true);
+        try {
+            const contract = getReadOnlyContract();
+            const raw = await contract.getCreditProfile(account);
+            setCreditProfile({
+                activeInvestments:        Number(raw.activeInvestments),
+                completedInvestments:     Number(raw.completedInvestments),
+                totalCapitalInvested:     ethers.formatEther(raw.totalCapitalInvested),
+                totalInvestedInCompleted: ethers.formatEther(raw.totalInvestedInCompleted),
+                totalCapitalRecovered:    ethers.formatEther(raw.totalCapitalRecovered),
+            });
+        } catch (err) {
+            console.error("Failed to fetch investment analytics:", err.message);
+        } finally {
+            setLoadingCredit(false);
+        }
     }
 
     useEffect(() => {
         fetchListedInvoices();
         refreshBalances();
+        fetchCreditProfile();
     }, [account, provider]);
 
+    // ── existing handler ────────────────────────────────────────────────────
     async function handleBuy() {
         if (!account) return setBuyMsg("Please connect your wallet.");
         if (!buyTokenId) return setBuyMsg("Please enter a Token ID.");
@@ -80,9 +175,7 @@ function FinancierDashboard() {
         setBuyMsg("");
         try {
             const invoice = invoices.find((item) => item.tokenId === Number(buyTokenId));
-            if (!invoice) {
-                return setBuyMsg("❌ Unable to find the selected invoice.");
-            }
+            if (!invoice) return setBuyMsg("❌ Unable to find the selected invoice.");
 
             const signer = await provider.getSigner();
             const signerAddress = await signer.getAddress();
@@ -106,7 +199,6 @@ function FinancierDashboard() {
 
             const tx = await signerContract.buyInvoice(buyTokenId, { value: priceWei });
             console.log("Transaction Hash:", tx.hash);
-            console.log("Waiting for confirmation...");
             const receipt = await tx.wait();
             console.log("Confirmed in block:", receipt.blockNumber);
 
@@ -124,6 +216,7 @@ function FinancierDashboard() {
             setBuyTokenId("");
             fetchListedInvoices();
             refreshBalances();
+            fetchCreditProfile();   // NEW: refresh score after buying (+2 reward)
         } catch (err) {
             console.error("Buy transaction failed:", err);
             setBuyMsg(`❌ ${getFriendlyErrorMessage(err, "Purchase failed.")}`);
@@ -143,17 +236,33 @@ function FinancierDashboard() {
         );
     }
 
+    if (roles?.financier && account.toLowerCase() !== roles.financier) {
+        return (
+            <div className="page">
+                <h1>Financier Dashboard</h1>
+                <div className="section-card">
+                    <p>Please switch MetaMask to the Financier account.</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="page">
             <h1>Financier Dashboard</h1>
             <p className="subtitle-small">Connected: {account}</p>
 
+            {/* ── Live Balances (unchanged) ─────────────────────────────────── */}
             <section className="section-card balance-card">
                 <h2>Live Balances</h2>
                 <div className="balance-grid">
                     <div className="balance-item">
                         <span className="balance-label">Connected Wallet Address</span>
-                        <strong>{walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Not connected"}</strong>
+                        <strong>
+                            {walletAddress
+                                ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+                                : "Not connected"}
+                        </strong>
                     </div>
                     <div className="balance-item">
                         <span className="balance-label">Wallet Balance</span>
@@ -162,6 +271,65 @@ function FinancierDashboard() {
                 </div>
             </section>
 
+            {/* ── Investment Analytics ────────────────────────────────────────── */}
+            <section className="section-card">
+                <h2>
+                    Investment Analytics&nbsp;
+                    <button
+                        className="btn btn-secondary"
+                        style={{ fontSize: "0.75rem", padding: "4px 10px", marginLeft: "8px" }}
+                        onClick={fetchCreditProfile}
+                        disabled={loadingCredit}
+                    >
+                        {loadingCredit ? "Loading…" : "Refresh"}
+                    </button>
+                </h2>
+
+                {creditProfile ? (() => {
+                    const invested    = parseFloat(creditProfile.totalInvestedInCompleted);
+                    const recovered   = parseFloat(creditProfile.totalCapitalRecovered);
+                    const roi = invested > 0
+                        ? (((recovered - invested) / invested) * 100).toFixed(2)
+                        : null;
+                    return (
+                        <div style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                            gap: "16px 24px",
+                            marginTop: "12px",
+                        }}>
+                            <div>
+                                <span className="balance-label">Total Capital Deployed</span><br />
+                                <strong>{creditProfile.totalCapitalInvested} ETH</strong>
+                            </div>
+                            <div>
+                                <span className="balance-label">Active Investments</span><br />
+                                <strong>{creditProfile.activeInvestments}</strong>
+                            </div>
+                            <div>
+                                <span className="balance-label">Completed Investments</span><br />
+                                <strong>{creditProfile.completedInvestments}</strong>
+                            </div>
+                            <div>
+                                <span className="balance-label">Capital Recovered</span><br />
+                                <strong>{creditProfile.totalCapitalRecovered} ETH</strong>
+                            </div>
+                            <div>
+                                <span className="balance-label">Average ROI (closed positions)</span><br />
+                                <strong style={{ color: roi === null ? "inherit" : roi >= 0 ? "#22c55e" : "#ef4444" }}>
+                                    {roi === null ? "—" : `${roi}%`}
+                                </strong>
+                            </div>
+                        </div>
+                    );
+                })() : (
+                    <p style={{ marginTop: "12px" }}>
+                        {loadingCredit ? "Loading analytics…" : "No investment activity yet."}
+                    </p>
+                )}
+            </section>
+
+            {/* ── Listed Invoices — NEW: Buyer Score column ────────────────── */}
             <section className="section-card">
                 <h2>Listed Invoices</h2>
                 <button className="btn btn-secondary" onClick={fetchListedInvoices}>
@@ -172,43 +340,71 @@ function FinancierDashboard() {
                 ) : invoices.length === 0 ? (
                     <p style={{ marginTop: "12px" }}>No invoices currently listed for sale.</p>
                 ) : (
-                    <table className="invoice-table">
-                        <thead>
-                            <tr>
-                                <th>Token ID</th>
-                                <th>Invoice Amount</th>
-                                <th>Current Price</th>
-                                <th>Due Date</th>
-                                <th>Owner</th>
-                                <th>Details</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {invoices.map((inv) => (
-                                <tr key={inv.tokenId}>
-                                    <td>{inv.tokenId}</td>
-                                    <td>{inv.invoiceAmount} ETH</td>
-                                    <td>{inv.currPrice} ETH</td>
-                                    <td>{inv.dueDate}</td>
-                                    <td>
-                                        {inv.currentOwner.slice(0, 6)}...{inv.currentOwner.slice(-4)}
-                                    </td>
-                                    <td>
-                                        <Link to={`/invoice/${inv.tokenId}`} className="btn btn-secondary">
-                                            View
-                                        </Link>
-                                    </td>
+                    <>
+                        {/* Legend */}
+                        <p style={{
+                            marginTop: "10px", marginBottom: "4px",
+                            fontSize: "0.78rem", color: "#6b7280",
+                        }}>
+                            💡 Buyer Score reflects the buyer's on-chain credit profile.
+                            A higher score means lower default risk.
+                        </p>
+                        <table className="invoice-table">
+                            <thead>
+                                <tr>
+                                    <th>Token ID</th>
+                                    <th>Invoice Amount</th>
+                                    <th>Current Price</th>
+                                    <th>Due Date</th>
+                                    <th>Buyer Score</th>
+                                    <th>Owner</th>
+                                    <th>Details</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {invoices.map((inv) => (
+                                    <tr key={inv.tokenId}>
+                                        <td>{inv.tokenId}</td>
+                                        <td>{inv.invoiceAmount} ETH</td>
+                                        <td>{inv.currPrice} ETH</td>
+                                        <td>{inv.dueDate}</td>
+                                        <td>
+                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
+                                                <ScoreBadge score={buyerScores[inv.tokenId] ?? null} />
+                                                {buyerScores[inv.tokenId] != null && (
+                                                    <span style={{
+                                                        fontSize: "0.65rem",
+                                                        color: scoreColour(buyerScores[inv.tokenId]),
+                                                    }}>
+                                                        {scoreLabel(buyerScores[inv.tokenId])}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {inv.currentOwner.slice(0, 6)}...{inv.currentOwner.slice(-4)}
+                                        </td>
+                                        <td>
+                                            <Link to={`/invoice/${inv.tokenId}`} className="btn btn-secondary">
+                                                View
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </>
                 )}
             </section>
 
+            {/* ── Buy Invoice (unchanged) ───────────────────────────────────── */}
             <section className="section-card">
                 <h2>Buy Invoice NFT</h2>
                 <p style={{ marginBottom: "12px", color: "#4a4a4a" }}>
                     Purchase a discounted invoice NFT. You will pay the current listed price.
+                    <span style={{ marginLeft: "8px", fontSize: "0.8rem", color: "#22c55e" }}>
+                        (+2 credit score on purchase)
+                    </span>
                 </p>
                 <div className="form-group">
                     <label>Token ID</label>
@@ -220,6 +416,31 @@ function FinancierDashboard() {
                         className="form-input"
                     />
                 </div>
+
+                {/* Preview: show buyer score for the token being considered */}
+                {buyTokenId !== "" && invoices.find((i) => i.tokenId === Number(buyTokenId)) && (
+                    <div style={{
+                        padding: "10px 14px", marginBottom: "10px",
+                        background: "rgba(0,0,0,0.03)", borderRadius: "6px",
+                        fontSize: "0.82rem",
+                    }}>
+                        {(() => {
+                            const inv = invoices.find((i) => i.tokenId === Number(buyTokenId));
+                            const score = buyerScores[inv.tokenId];
+                            return score != null ? (
+                                <span>
+                                    Buyer credit score for Token {buyTokenId}:&nbsp;
+                                    <strong style={{ color: scoreColour(score) }}>
+                                        {score} — {scoreLabel(score)}
+                                    </strong>
+                                </span>
+                            ) : (
+                                <span style={{ color: "#9ca3af" }}>Fetching buyer score…</span>
+                            );
+                        })()}
+                    </div>
+                )}
+
                 <button className="btn btn-primary" onClick={handleBuy} disabled={buying}>
                     {buying ? "Buying..." : "Buy Invoice NFT"}
                 </button>

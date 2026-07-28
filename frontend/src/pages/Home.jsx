@@ -31,7 +31,7 @@ function Home() {
                 </div>
                 <div className="info-card">
                     <h3>For Buyers</h3>
-                    <p>Sign and settle invoices on their due date.</p>
+                    <p>Sign and settle invoices on or before their due date.</p>
                 </div>
                 <div className="info-card">
                     <h3>For Financiers</h3>

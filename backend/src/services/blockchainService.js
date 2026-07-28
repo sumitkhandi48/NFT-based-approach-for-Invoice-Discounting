@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import { contract } from "../config/contract.js";
 import { pinataConfig } from "../config/pinata.js";
+import { ACTIVE_NETWORK } from "../config/network.js";
 
 export async function getInvoiceMetadata(tokenId) {
     const tokenIdNumber = Number(tokenId);
@@ -69,7 +70,11 @@ async function readInvoiceFromEvent(event) {
 }
 
 export async function getBlockchainSummary() {
-    const mintEvents = await contract.queryFilter(contract.filters.InvoiceMinted());
+    const mintEvents = await contract.queryFilter(
+        contract.filters.InvoiceMinted(),
+        ACTIVE_NETWORK.deployBlock,
+        "latest"
+    );
     const invoices = await Promise.all(mintEvents.map((event) => readInvoiceFromEvent(event)));
 
     invoices.sort((left, right) => left.tokenId - right.tokenId);

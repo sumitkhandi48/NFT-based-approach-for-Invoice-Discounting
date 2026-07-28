@@ -7,6 +7,36 @@ export function WalletProvider({ children }) {
     const [account, setAccount] = useState(null);
     const [network, setNetwork] = useState(null);
     const [provider, setProvider] = useState(null);
+    const [roles, setRoles] = useState({ supplier: "", buyer: "", financier: "" });
+
+    useEffect(() => {
+        async function fetchRoles() {
+            let supplier = import.meta.env.VITE_SUPPLIER_ADDRESS;
+            let buyer = import.meta.env.VITE_BUYER_ADDRESS;
+            let financier = import.meta.env.VITE_FINANCIER_ADDRESS;
+
+            if (!supplier || !buyer || !financier) {
+                try {
+                    const localProvider = new ethers.JsonRpcProvider(import.meta.env.VITE_GANACHE_RPC_URL || "http://127.0.0.1:8545");
+                    const accs = await localProvider.listAccounts();
+                    if (accs.length >= 3) {
+                        supplier = supplier || accs[0].address;
+                        buyer = buyer || accs[1].address;
+                        financier = financier || accs[2].address;
+                    }
+                } catch (e) {
+                    console.warn("Could not fetch fallback accounts:", e);
+                }
+            }
+
+            setRoles({
+                supplier: supplier?.toLowerCase() || "",
+                buyer: buyer?.toLowerCase() || "",
+                financier: financier?.toLowerCase() || ""
+            });
+        }
+        fetchRoles();
+    }, []);
 
     async function connectWallet() {
         if (!window.ethereum) {
@@ -57,7 +87,7 @@ export function WalletProvider({ children }) {
 
     return (
         <WalletContext.Provider
-            value={{ account, network, provider, connectWallet, disconnectWallet }}
+            value={{ account, network, provider, roles, connectWallet, disconnectWallet }}
         >
             {children}
         </WalletContext.Provider>

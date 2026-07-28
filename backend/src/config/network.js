@@ -13,6 +13,7 @@ const NETWORKS = {
         rpcUrl: process.env.SEPOLIA_RPC_URL,
         contractAddress: process.env.SEPOLIA_CONTRACT_ADDRESS,
         chainId: 11155111,
+        deployBlock: 11261642,
     },
 };
 

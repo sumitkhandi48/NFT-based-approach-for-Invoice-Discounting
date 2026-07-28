@@ -1,0 +1,51 @@
+◇ injected env (4) from .env // tip: ⌘ suppress logs { quiet: true }
+No contracts to compile
+
+Running Solidity tests
+
+
+Running Mocha tests
+
+
+  InvoiceNFT
+    Algorithm 1 — mintInvoice()
+      1) "before each" hook for "should mint a new invoice NFT successfully"
+
+
+  0 passing (176ms)
+  1 failing
+
+  1) InvoiceNFT
+       "before each" hook for "should mint a new invoice NFT successfully":
+     HardhatError: HHE703: Cannot connect to the network "ganache".
+Please make sure your node is running, and check your internet connection and networks config
+      at HttpProvider.#fetchJsonRpcResponse (node_modules/hardhat/src/internal/builtin-plugins/network-manager/http-provider.ts:195:15)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async <anonymous> (node_modules/hardhat/src/internal/builtin-plugins/network-manager/network-manager.ts:268:49)
+      at async next (node_modules/hardhat/src/internal/core/hook-manager.ts:208:13)
+      at async Array.onRequest (node_modules/hardhat/src/internal/builtin-plugins/network-manager/hook-handlers/network.ts:81:14)
+      at async next (node_modules/hardhat/src/internal/core/hook-manager.ts:207:13)
+      at async HookManagerImplementation.runHandlerChain (node_modules/hardhat/src/internal/core/hook-manager.ts:213:12)
+      at async HttpProvider.request (node_modules/hardhat/src/internal/builtin-plugins/network-manager/http-provider.ts:137:25)
+      at async ChainIdValidatorHandler.#getChainIdFromEthNetVersion (node_modules/hardhat/src/internal/builtin-plugins/network-manager/request-handlers/handlers/chain-id/chain-id.ts:48:16)
+      at async ChainIdValidatorHandler.getChainId (node_modules/hardhat/src/internal/builtin-plugins/network-manager/request-handlers/handlers/chain-id/chain-id.ts:30:25)
+     Caused by: ConnectionRefusedError: Connection to http://127.0.0.1:8545 was refused
+      at handleError (node_modules/@nomicfoundation/hardhat-utils/src/internal/request.ts:165:11)
+      at postJsonRequest (node_modules/@nomicfoundation/hardhat-utils/src/request.ts:159:5)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async HttpProvider.#fetchJsonRpcResponse (node_modules/hardhat/src/internal/builtin-plugins/network-manager/http-provider.ts:185:18)
+      at async <anonymous> (node_modules/hardhat/src/internal/builtin-plugins/network-manager/network-manager.ts:268:49)
+      at async next (node_modules/hardhat/src/internal/core/hook-manager.ts:208:13)
+      at async Array.onRequest (node_modules/hardhat/src/internal/builtin-plugins/network-manager/hook-handlers/network.ts:81:14)
+      at async next (node_modules/hardhat/src/internal/core/hook-manager.ts:207:13)
+      at async HookManagerImplementation.runHandlerChain (node_modules/hardhat/src/internal/core/hook-manager.ts:213:12)
+      at async HttpProvider.request (node_modules/hardhat/src/internal/builtin-plugins/network-manager/http-provider.ts:137:25)
+     Caused by: Error: connect ECONNREFUSED 127.0.0.1:8545
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+
+
+
+
+24 passing (24 mocha)
+1 failing (1 mocha)
+

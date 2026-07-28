@@ -14,6 +14,7 @@ export default defineConfig({
         enabled: true,
         runs: 200,
       },
+      viaIR: true,          // required: extra struct fields exceed legacy stack depth
       evmVersion: "paris",
     },
   },
