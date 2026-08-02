@@ -63,6 +63,9 @@ function SupplierDashboard() {
     const [recTokenId, setRecTokenId] = useState("");      // tracks which tokenId rec was fetched for
     const [useRecommended, setUseRecommended] = useState(false);
 
+    // ── ZK Phase-1 toggle ─────────────────────────────────────────
+    const [zkEnabled, setZkEnabled] = useState(false); // supplier opts in to Groth16 private mode
+
     // ── fetch helpers ───────────────────────────────────────────────────────
     async function fetchInvoices() {
         if (!account) return;
@@ -187,6 +190,18 @@ function SupplierDashboard() {
                         console.warn("Could not set due timestamp:", tsErr.message);
                     }
                 }
+
+                // ── ZK Phase 1: mark invoice as private if the supplier toggled it ──
+                if (zkEnabled) {
+                    try {
+                        const zkTx = await contract.enablePrivateInvoice(tokenId);
+                        await zkTx.wait();
+                        console.log(`ZK enabled for token ${tokenId}`);
+                    } catch (zkErr) {
+                        console.warn("Could not enable ZK for invoice:", zkErr.message);
+                    }
+                }
+                // ──────────────────────────────────────────────────────────────────
             }
             // ────────────────────────────────────────────────────────────────────
 
@@ -463,6 +478,28 @@ function SupplierDashboard() {
                     <input type="text" value={mintDueDate} onChange={(e) => setMintDueDate(e.target.value)}
                         placeholder="31-12-2025" className="form-input" />
                 </div>
+
+                {/* ── ZK Phase 1 toggle ────────────────────────────────────────────── */}
+                <div className="form-group" style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                    <input
+                        id="zk-toggle"
+                        type="checkbox"
+                        checked={zkEnabled}
+                        onChange={(e) => setZkEnabled(e.target.checked)}
+                        style={{ marginTop: "3px", accentColor: "#6366f1", width: "16px", height: "16px", flexShrink: 0 }}
+                    />
+                    <div>
+                        <label htmlFor="zk-toggle" style={{ fontWeight: 600, cursor: "pointer" }}>
+                            Enable Private Invoice (Groth16 ZK)
+                        </label>
+                        <p style={{ margin: "2px 0 0", fontSize: "0.78rem", color: "#6b7280" }}>
+                            Marks this invoice for zero-knowledge proof protection.
+                            Proof generation is a Phase 2 feature — enabling this now
+                            records the intent on-chain so the prover can act on it later.
+                        </p>
+                    </div>
+                </div>
+                {/* ────────────────────────────────────────────────────────────────── */}
                 <button className="btn btn-primary" onClick={handleMint} disabled={minting}>
                     {minting ? "Minting..." : "Mint Invoice NFT"}
                 </button>

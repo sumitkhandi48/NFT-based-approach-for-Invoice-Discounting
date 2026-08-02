@@ -41,9 +41,12 @@ function BuyerDashboard() {
     const [walletAddress, setWalletAddress] = useState("");
     const [walletBalance, setWalletBalance] = useState("0");
 
-    // ── NEW: credit profile state ───────────────────────────────────────────
+    // ── NEW: credit profile state
     const [creditProfile, setCreditProfile] = useState(null);
     const [loadingCredit, setLoadingCredit] = useState(false);
+
+    // ── ZK Phase-1: per-invoice ZK metadata { tokenId: { zkEnabled, proofStatus } }
+    const [zkData, setZkData] = useState({});
 
     // ── fetch helpers ───────────────────────────────────────────────────────
     async function fetchAssignedInvoices() {
@@ -69,6 +72,7 @@ function BuyerDashboard() {
                         invoice.isApproved,
                 }));
             setInvoices(results);
+            fetchZKData(results); // ZK Phase 1: load privacy status for each invoice
         } catch (err) {
             console.error("Failed to fetch invoices:", err.message);
         } finally {
@@ -87,6 +91,37 @@ function BuyerDashboard() {
         const walletWei = await provider.getBalance(activeAddress);
         setWalletAddress(activeAddress);
         setWalletBalance(ethers.formatEther(walletWei));
+    }
+
+    // ── ZK Phase-1: bulk-fetch privacy status for a list of invoices ─────────
+    async function fetchZKData(invoiceList) {
+        if (!invoiceList || invoiceList.length === 0) return;
+        try {
+            const contract = getReadOnlyContract();
+            const PROOF_LABELS = ["None", "Generated", "Verified"];
+            const results = await Promise.all(
+                invoiceList.map(async (inv) => {
+                    try {
+                        const [zkEnabled, , proofStatusIndex] =
+                            await contract.getZKMetadata(inv.tokenId);
+                        return {
+                            tokenId: inv.tokenId,
+                            zkEnabled,
+                            proofStatus: PROOF_LABELS[Number(proofStatusIndex)] ?? "None",
+                        };
+                    } catch {
+                        return { tokenId: inv.tokenId, zkEnabled: false, proofStatus: "None" };
+                    }
+                })
+            );
+            const map = {};
+            results.forEach(({ tokenId, zkEnabled, proofStatus }) => {
+                map[tokenId] = { zkEnabled, proofStatus };
+            });
+            setZkData(map);
+        } catch (err) {
+            console.error("Failed to fetch ZK metadata:", err.message);
+        }
     }
 
     // ── NEW: fetch the buyer's own credit profile ───────────────────────────
@@ -377,6 +412,8 @@ function BuyerDashboard() {
                                 <th>Approved</th>
                                 <th>For Sale</th>
                                 <th>Settled</th>
+                                <th>Private</th>
+                                <th>Proof Status</th>
                                 <th>Details</th>
                             </tr>
                         </thead>
@@ -400,6 +437,21 @@ function BuyerDashboard() {
                                         <span className={inv.isSettled ? "badge badge-green" : "badge badge-grey"}>
                                             {inv.isSettled ? "Yes" : "No"}
                                         </span>
+                                    </td>
+                                    {/* ZK Phase 1 columns */}
+                                    <td>
+                                        {zkData[inv.tokenId]?.zkEnabled
+                                            ? <span className="badge badge-blue" title="Groth16 ZK enabled">🔒 Private</span>
+                                            : <span className="badge badge-grey">Public</span>}
+                                    </td>
+                                    <td>
+                                        {(() => {
+                                            const status = zkData[inv.tokenId]?.proofStatus ?? "None";
+                                            const colour = status === "Verified" ? "badge-green"
+                                                         : status === "Generated" ? "badge-blue"
+                                                         : "badge-grey";
+                                            return <span className={`badge ${colour}`}>{status}</span>;
+                                        })()}
                                     </td>
                                     <td>
                                         <Link to={`/invoice/${inv.tokenId}`} className="btn btn-secondary">

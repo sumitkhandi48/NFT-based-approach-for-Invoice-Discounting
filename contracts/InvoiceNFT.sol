@@ -118,6 +118,25 @@ contract InvoiceNFT is ERC721URIStorage {
     }
 
     // ══════════════════════════════════════════════
+    //  ZK ARCHITECTURE – PHASE 1  (proof stubs only, no circuit yet)
+    // ══════════════════════════════════════════════
+
+    /// @notice Lifecycle state of an off-chain Groth16 proof.
+    enum ProofStatus { NONE, GENERATED, VERIFIED }
+
+    /**
+     * @notice ZK metadata stored per invoice.
+     *  - zkEnabled      : supplier opted in to private-invoice mode
+     *  - commitmentHash : Pedersen/Poseidon commitment set by the off-chain prover (Phase 2)
+     *  - proofStatus    : current state in the NONE → GENERATED → VERIFIED lifecycle
+     */
+    struct ZKMetadata {
+        bool        zkEnabled;
+        bytes32     commitmentHash;   // zero until Phase 2 prover sets it
+        ProofStatus proofStatus;
+    }
+
+    // ══════════════════════════════════════════════
     //  STATE VARIABLES
     // ══════════════════════════════════════════════
 
@@ -141,6 +160,9 @@ contract InvoiceNFT is ERC721URIStorage {
     mapping(uint256 => bool)                  public invoiceSettledFlag; // set in settleInvoice
     mapping(uint256 => bool)                  public invoiceDefaulted;   // set in markDefault
     mapping(uint256 => uint256)               public invoiceInvestmentAmount; // wei paid on buyInvoice
+
+    // ═ ZK Phase-1 mappings ═════──────────────────────────────────────
+    mapping(uint256 => ZKMetadata)            public zkMetadata;       // per-invoice ZK state
 
     address private immutable _contractOwner;
 
@@ -182,6 +204,12 @@ contract InvoiceNFT is ERC721URIStorage {
 
     /// @notice Emitted when markDefault() is executed.
     event InvoiceDefaultedEvent(uint256 indexed tokenId, address indexed buyer);
+
+    // ═ ZK events (emitted by off-chain backend in Phase 2 via contract calls) ═
+    /// @notice Emitted when an off-chain proof has been generated and the commitment recorded.
+    event ProofGenerated(uint256 indexed tokenId, bytes32 commitmentHash);
+    /// @notice Emitted when a proof has been verified on-chain.
+    event ProofVerified(uint256 indexed tokenId, address indexed verifier);
 
     // ══════════════════════════════════════════════
     //  INTERNAL HELPERS
@@ -349,6 +377,47 @@ contract InvoiceNFT is ERC721URIStorage {
         uint256 weighted = settlementScore * 45 + defaultScore * 35 + experienceScore * 20;
         uint256 bbcs = (weighted + 50) / 100;
         finalBBCS = uint8(bbcs > 100 ? 100 : bbcs);
+    }
+
+    // ══════════════════════════════════════════════
+    //  VIEW FUNCTIONS – ZK PHASE 1
+    // ══════════════════════════════════════════════
+
+    /**
+     * @notice Returns the full ZK metadata for an invoice.
+     *         commitmentHash is zero(bytes32) until Phase 2 sets it.
+     *         proofStatus is ProofStatus.NONE until an off-chain prover calls in.
+     */
+    function getZKMetadata(uint256 tokenId)
+        external view
+        returns (bool zkEnabled, bytes32 commitmentHash, ProofStatus proofStatus)
+    {
+        ZKMetadata storage z = zkMetadata[tokenId];
+        return (z.zkEnabled, z.commitmentHash, z.proofStatus);
+    }
+
+    /// @notice Convenience getter — true if the invoice was created in private mode.
+    function isPrivateInvoice(uint256 tokenId) external view returns (bool) {
+        return zkMetadata[tokenId].zkEnabled;
+    }
+
+    // ══════════════════════════════════════════════
+    //  ZK PHASE 1 – INVOICE ENABLEMENT
+    // ══════════════════════════════════════════════
+
+    /**
+     * @notice Supplier calls this once after minting to mark the invoice as
+     *         private (ZK-enabled). Can only be set once (idempotent guard).
+     *
+     * @dev Phase 2 will extend this to accept the initial commitment hash from
+     *      the off-chain Groth16 prover. For now the commitmentHash stays zero.
+     */
+    function enablePrivateInvoice(uint256 tokenId) external {
+        require(InvoiceNFT_Map[tokenId].creator == msg.sender, "Only creator can enable ZK");
+        require(!zkMetadata[tokenId].zkEnabled,                "ZK already enabled for this invoice");
+        zkMetadata[tokenId].zkEnabled     = true;
+        zkMetadata[tokenId].proofStatus   = ProofStatus.NONE;
+        // commitmentHash left as zero — populated by prover in Phase 2
     }
 
     // ══════════════════════════════════════════════
