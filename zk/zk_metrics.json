@@ -1,0 +1,101 @@
+[
+  {
+    "invoiceId": "0",
+    "zkEnabled": true,
+    "generationTimeMs": 675,
+    "verificationTimeMs": null,
+    "proofStatus": "GENERATED",
+    "proofVersion": "Groth16-v1",
+    "timestamp": "2026-08-04T10:03:57.341Z"
+  },
+  {
+    "invoiceId": "0",
+    "zkEnabled": true,
+    "generationTimeMs": null,
+    "verificationTimeMs": 22,
+    "proofStatus": "VERIFIED",
+    "proofVersion": "Groth16-v1",
+    "timestamp": "2026-08-04T10:06:05.523Z"
+  },
+  {
+    "invoiceId": "0",
+    "zkEnabled": true,
+    "generationTimeMs": 448,
+    "verificationTimeMs": null,
+    "proofStatus": "GENERATED",
+    "proofVersion": "Groth16-v1",
+    "timestamp": "2026-08-04T10:42:41.411Z"
+  },
+  {
+    "invoiceId": "0",
+    "zkEnabled": true,
+    "generationTimeMs": null,
+    "verificationTimeMs": 17,
+    "proofStatus": "VERIFIED",
+    "proofVersion": "Groth16-v1",
+    "timestamp": "2026-08-04T10:45:43.521Z"
+  },
+  {
+    "invoiceId": "0",
+    "zkEnabled": true,
+    "generationTimeMs": null,
+    "verificationTimeMs": 14,
+    "proofStatus": "VERIFIED",
+    "proofVersion": "Groth16-v1",
+    "timestamp": "2026-08-04T10:46:47.788Z"
+  },
+  {
+    "invoiceId": "0",
+    "zkEnabled": true,
+    "generationTimeMs": null,
+    "verificationTimeMs": 15,
+    "proofStatus": "VERIFIED",
+    "proofVersion": "Groth16-v1",
+    "timestamp": "2026-08-04T10:46:51.348Z"
+  },
+  {
+    "invoiceId": "0",
+    "zkEnabled": true,
+    "generationTimeMs": null,
+    "verificationTimeMs": 15,
+    "proofStatus": "VERIFIED",
+    "proofVersion": "Groth16-v1",
+    "timestamp": "2026-08-04T10:46:51.869Z"
+  },
+  {
+    "invoiceId": "0",
+    "zkEnabled": true,
+    "generationTimeMs": 615,
+    "verificationTimeMs": null,
+    "proofStatus": "GENERATED",
+    "proofVersion": "Groth16-v1",
+    "timestamp": "2026-08-04T11:34:03.682Z"
+  },
+  {
+    "invoiceId": "0",
+    "zkEnabled": true,
+    "generationTimeMs": null,
+    "verificationTimeMs": 24,
+    "proofStatus": "VERIFIED",
+    "proofVersion": "Groth16-v1",
+    "timestamp": "2026-08-04T11:35:16.360Z"
+  },
+  {
+    "invoiceId": "1",
+    "zkEnabled": true,
+    "generationTimeMs": 275,
+    "verificationTimeMs": null,
+    "proofStatus": "GENERATED",
+    "proofVersion": "Groth16-v1",
+    "timestamp": "2026-08-04T11:38:05.555Z"
+  },
+  {
+    "invoiceId": "1",
+    "zkEnabled": true,
+    "generationTimeMs": null,
+    "verificationTimeMs": 16,
+    "proofStatus": "VERIFIED",
+    "proofVersion": "Groth16-v1",
+    "timestamp": "2026-08-04T11:39:15.574Z"
+  }
+]

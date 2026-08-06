@@ -22,7 +22,7 @@ function renderInvoiceRows(invoices, emptyMessage) {
                     <td>${escapeHtml(invoice.currentOwner)}</td>
                     <td>${escapeHtml(invoice.creator)}</td>
                     <td>${escapeHtml(invoice.buyer)}</td>
-                    <td>${invoice.invoiceAmount} ETH</td>
+                    <td>${invoice.invoiceAmount === null ? "🔒 Private" : `${invoice.invoiceAmount} ETH`}</td>
                     <td>${invoice.currPrice} ETH</td>
                     <td>${escapeHtml(invoice.stage)}</td>
                     <td>${invoice.forSale ? "Yes" : "No"}</td>

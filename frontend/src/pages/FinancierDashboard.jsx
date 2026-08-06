@@ -52,8 +52,14 @@ function FinancierDashboard() {
     const [loadingInvoices, setLoadingInvoices] = useState(false);
 
     const [buyTokenId, setBuyTokenId] = useState("");
-    const [buying, setBuying] = useState(false);
-    const [buyMsg, setBuyMsg] = useState("");
+    const [buying, setBuying]         = useState(false);
+    const [buyMsg, setBuyMsg]         = useState("");
+
+    // ── ZK Phase-3: proof verification state ─────────────────────────────
+    const [zkVerifyTokenId, setZkVerifyTokenId]   = useState("");
+    const [zkVerifying, setZkVerifying]           = useState(false);
+    const [zkVerifyResult, setZkVerifyResult]     = useState(null);   // { verified, verificationTimeMs, proofStatus }
+    const [zkVerifyMsg, setZkVerifyMsg]           = useState("");
 
     const [walletAddress, setWalletAddress] = useState("");
     const [walletBalance, setWalletBalance] = useState("0");
@@ -131,16 +137,22 @@ function FinancierDashboard() {
     }
 
     async function refreshBalances() {
-        if (!account || !provider) {
+        if (!account) {
             setWalletAddress("");
             setWalletBalance("0");
             return;
         }
-        const signer = await provider.getSigner();
-        const activeAddress = await signer.getAddress();
-        const walletWei = await provider.getBalance(activeAddress);
-        setWalletAddress(activeAddress);
-        setWalletBalance(ethers.formatEther(walletWei));
+        try {
+            // Use JsonRpcProvider (direct Ganache call) instead of BrowserProvider.
+            // BrowserProvider delegates to MetaMask which caches the balance and
+            // returns stale data after a Ganache restart — causing the mismatch.
+            const directProvider = getReadOnlyProvider();
+            const walletWei = await directProvider.getBalance(account);
+            setWalletAddress(account);
+            setWalletBalance(ethers.formatEther(walletWei));
+        } catch (err) {
+            console.error("Failed to refresh balance:", err);
+        }
     }
 
     // ── ZK Phase-1: bulk-fetch privacy status for a list of invoices ─────────
@@ -182,6 +194,7 @@ function FinancierDashboard() {
             const contract = getReadOnlyContract();
             const raw = await contract.getCreditProfile(account);
             setCreditProfile({
+                score:                    Number(raw.score),
                 activeInvestments:        Number(raw.activeInvestments),
                 completedInvestments:     Number(raw.completedInvestments),
                 totalCapitalInvested:     ethers.formatEther(raw.totalCapitalInvested),
@@ -205,6 +218,17 @@ function FinancierDashboard() {
     async function handleBuy() {
         if (!account) return setBuyMsg("Please connect your wallet.");
         if (!buyTokenId) return setBuyMsg("Please enter a Token ID.");
+
+        // ── ZK Gate: private invoices must be VERIFIED before purchase ──
+        const inv = invoices.find(i => i.tokenId === Number(buyTokenId));
+        if (inv) {
+            const zk = zkData[inv.tokenId];
+            if (zk?.zkEnabled) {
+                if (zk.proofStatus !== "Verified") {
+                    return setBuyMsg("❌ This is a Private Invoice. Verify the ZK proof before purchasing.");
+                }
+            }
+        }
 
         setBuying(true);
         setBuyMsg("");
@@ -257,6 +281,79 @@ function FinancierDashboard() {
             setBuyMsg(`❌ ${getFriendlyErrorMessage(err, "Purchase failed.")}`);
         } finally {
             setBuying(false);
+        }
+    }
+
+    // ── ZK Phase-3: verify Groth16 proof for a private invoice ─────────────
+    async function handleVerifyProof() {
+        if (!account)         return setZkVerifyMsg("❌ Please connect your wallet.");
+        if (!zkVerifyTokenId) return setZkVerifyMsg("❌ Enter the Token ID to verify.");
+
+        setZkVerifying(true);
+        setZkVerifyMsg("Step 1/2 — Running off-chain pre-flight check…");
+        setZkVerifyResult(null);
+
+        try {
+            // ── Step 1: backend snarkjs verify (optional pre-flight only) ──────────
+            let backendTimeMs = null;
+            try {
+                const res = await fetch(`${BACKEND_URL}/zk/verify`, {
+                    method:  "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body:    JSON.stringify({ invoiceId: zkVerifyTokenId }),
+                });
+                const data = await res.json();
+                if (data.success) backendTimeMs = data.verificationTimeMs;
+                if (data.success && !data.verified) {
+                    setZkVerifyMsg("❌ Off-chain pre-flight FAILED — proof is invalid.");
+                    return;
+                }
+            } catch (preflight) {
+                console.warn("[ZK preflight] Backend unavailable — proceeding to on-chain:", preflight.message);
+            }
+
+            setZkVerifyMsg("Step 2/2 — Submitting on-chain Groth16 verification (blockchain is the final authority)…");
+
+            // ── Step 2: fetch calldata from backend helper ───────────────────────
+            const cdRes  = await fetch(`${BACKEND_URL}/zk/calldata/${zkVerifyTokenId}`);
+            const cdData = await cdRes.json();
+            if (!cdData.success) throw new Error("Could not build on-chain calldata: " + cdData.message);
+
+            // ── Step 3: call verifyAndFund() on InvoiceNFT (authoritative) ─────────
+            const t0 = Date.now();
+            const signer   = await provider.getSigner();
+            const contract = getSignerContract(signer);
+
+            const tx = await contract.verifyAndFund(
+                BigInt(zkVerifyTokenId),
+                cdData.pA,
+                cdData.pB,
+                cdData.pC,
+                cdData.pubSignals
+            );
+            const receipt = await tx.wait();
+            const onChainTimeMs = Date.now() - t0;
+
+            setZkVerifyResult({
+                verified:           true,
+                verificationTimeMs: backendTimeMs ?? onChainTimeMs,
+                onChainTimeMs,
+                proofStatus:        "VERIFIED",
+                txHash:             receipt.hash ?? tx.hash,
+            });
+
+            setZkVerifyMsg(
+                `✅ VERIFIED on-chain (EVM pairing check passed)! Tx: ${(receipt.hash ?? tx.hash).slice(0, 12)}…  Funding is now unlocked.`
+            );
+            setBuyTokenId(zkVerifyTokenId);
+            fetchZKData(invoices);
+
+        } catch (err) {
+            console.error("[ZK verifyAndFund] Error:", err);
+            setZkVerifyResult({ verified: false, proofStatus: "FAILED" });
+            setZkVerifyMsg(`❌ ${getFriendlyErrorMessage(err, "On-chain proof verification failed.")}`);
+        } finally {
+            setZkVerifying(false);
         }
     }
 
@@ -402,7 +499,7 @@ function FinancierDashboard() {
                                 {invoices.map((inv) => (
                                     <tr key={inv.tokenId}>
                                         <td>{inv.tokenId}</td>
-                                        <td>{inv.invoiceAmount} ETH</td>
+                                        <td>{inv.invoiceAmount === null ? "🔒 Private" : `${inv.invoiceAmount} ETH`}</td>
                                         <td>{inv.currPrice} ETH</td>
                                         <td>{inv.dueDate}</td>
                                         <td>
@@ -446,6 +543,48 @@ function FinancierDashboard() {
                             </tbody>
                         </table>
                     </>
+                )}
+            </section>
+
+            {/* ── ZK Phase-3: Verify Proof section ───────────────────────── */}
+            <section className="section-card">
+                <h2>🔒 Private Invoice — Verify Proof</h2>
+                <p style={{ marginBottom: "12px", fontSize: "0.85rem", color: "#6b7280" }}>
+                    Verify the Groth16 zero-knowledge proof for a private invoice.
+                    Funding is only permitted after successful verification.
+                </p>
+                <div className="form-group">
+                    <label>Token ID (Private Invoice)</label>
+                    <input type="number" value={zkVerifyTokenId}
+                        onChange={e => setZkVerifyTokenId(e.target.value)}
+                        placeholder="Token ID" className="form-input" />
+                </div>
+                <button className="btn btn-primary"
+                    onClick={handleVerifyProof}
+                    disabled={zkVerifying}
+                    style={{ background: "linear-gradient(135deg, #0ea5e9, #6366f1)" }}>
+                    {zkVerifying ? "Verifying Proof…" : "Verify Proof"}
+                </button>
+                {zkVerifyMsg && <p className="form-msg">{zkVerifyMsg}</p>}
+                {zkVerifyResult && (
+                    <div style={{
+                        marginTop: "14px", padding: "12px 16px",
+                        background: zkVerifyResult.verified ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.06)",
+                        border: `1px solid ${zkVerifyResult.verified ? "#86efac" : "#fca5a5"}`,
+                        borderRadius: "8px", fontSize: "0.82rem",
+                    }}>
+                        <div><span className="balance-label">Proof Status</span><br />
+                            <strong style={{ color: zkVerifyResult.verified ? "#22c55e" : "#ef4444" }}>
+                                {zkVerifyResult.verified ? "✅ VERIFIED" : "❌ FAILED"}
+                            </strong></div>
+                        <div style={{ marginTop: "8px" }}><span className="balance-label">Verification Time</span><br />
+                            <strong>{zkVerifyResult.verificationTimeMs} ms</strong></div>
+                        {zkVerifyResult.verified && (
+                            <p style={{ marginTop: "8px", color: "#15803d", fontWeight: 600 }}>
+                                Funding is now unlocked for this invoice.
+                            </p>
+                        )}
+                    </div>
                 )}
             </section>
 

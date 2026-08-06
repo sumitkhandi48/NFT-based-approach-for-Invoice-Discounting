@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./IZKVerifier.sol";
+
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
 /**
@@ -122,18 +124,25 @@ contract InvoiceNFT is ERC721URIStorage {
     // ══════════════════════════════════════════════
 
     /// @notice Lifecycle state of an off-chain Groth16 proof.
-    enum ProofStatus { NONE, GENERATED, VERIFIED }
+    enum ProofStatus { NONE, GENERATED, VERIFIED, FAILED, EXPIRED }
 
     /**
      * @notice ZK metadata stored per invoice.
-     *  - zkEnabled      : supplier opted in to private-invoice mode
-     *  - commitmentHash : Pedersen/Poseidon commitment set by the off-chain prover (Phase 2)
-     *  - proofStatus    : current state in the NONE → GENERATED → VERIFIED lifecycle
+     *  - zkEnabled             : supplier opted in to private-invoice mode
+     *  - commitmentHash        : Poseidon commitment (set when proof is generated)
+     *  - proofHash             : keccak256 of the off-chain proof.json (integrity anchor)
+     *  - proofStatus           : NONE → GENERATED → VERIFIED | FAILED | EXPIRED
+     *  - verificationBlock     : block number when on-chain verification succeeded (Phase 4)
+     *  - verificationTimestamp : block.timestamp when on-chain verification succeeded (Phase 4)
      */
     struct ZKMetadata {
         bool        zkEnabled;
-        bytes32     commitmentHash;   // zero until Phase 2 prover sets it
+        bytes32     commitmentHash;
+        bytes32     proofHash;           // keccak256 of off-chain proof blob
         ProofStatus proofStatus;
+        uint256     verificationBlock;   // set by verifyAndFund() on success
+        uint256     verificationTimestamp; // set by verifyAndFund() on success
+        uint256     fundingPrice;        // public listing price for buy/revoke reset
     }
 
     // ══════════════════════════════════════════════
@@ -156,13 +165,30 @@ contract InvoiceNFT is ERC721URIStorage {
     mapping(uint256 => uint256)               public invoiceDueDateTimestamp;
 
     // ── Per-invoice lifecycle metadata ───────────
-    mapping(uint256 => uint64)                public invoiceMintedAt;    // set in mintInvoice
-    mapping(uint256 => bool)                  public invoiceSettledFlag; // set in settleInvoice
-    mapping(uint256 => bool)                  public invoiceDefaulted;   // set in markDefault
-    mapping(uint256 => uint256)               public invoiceInvestmentAmount; // wei paid on buyInvoice
+    mapping(uint256 => uint64)                public invoiceMintedAt;       // set in mintInvoice
+    mapping(uint256 => bool)                  public invoiceSettledFlag;    // set in settleInvoice
+    mapping(uint256 => bool)                  public invoiceDefaulted;      // set in markDefault
+    mapping(uint256 => uint256)               public invoiceInvestmentAmount; // wei paid on buyInvoice (funding price)
 
-    // ═ ZK Phase-1 mappings ═════──────────────────────────────────────
+    /**
+     * @notice Stores the true face value (settlement amount) for ZK-enabled private invoices.
+     *
+     *  Invariant: For standard invoices this mapping is never set — settlement
+     *  uses InvoiceMetadata.invoiceAmount directly.
+     *  For ZK-enabled invoices (where invoiceAmount == 0 for privacy), this mapping
+     *  holds the real face value so that settleInvoice() can demand the correct repayment.
+     *
+     *  Set in:
+     *   - storeZKProof()   : when the supplier records the proof after listing
+     *   - verifyAndFund()  : from pubSignals[2] (the financier's minimum-threshold public signal)
+     */
+    mapping(uint256 => uint256)               public invoiceFaceValue; // face value for ZK invoices; 0 = use invoiceAmount
+
+    // ═ ZK Phase-1/4 mappings ══════════════════════════════════════════
     mapping(uint256 => ZKMetadata)            public zkMetadata;       // per-invoice ZK state
+
+    // ═ ZK Phase-4: on-chain verifier ══════════════════════════════════
+    IZKVerifier private _zkVerifier;  // upgradeable via interface
 
     address private immutable _contractOwner;
 
@@ -170,8 +196,16 @@ contract InvoiceNFT is ERC721URIStorage {
     //  CONSTRUCTOR
     // ══════════════════════════════════════════════
 
-    constructor() ERC721("InvoiceNFT", "INVN") {
+    /**
+     * @param verifierAddress  Address of the deployed Groth16Verifier contract.
+     *                         Pass address(0) to disable on-chain verification
+     *                         (useful for standard-only deployments or testing).
+     */
+    constructor(address verifierAddress) ERC721("InvoiceNFT", "INVN") {
         _contractOwner = msg.sender;
+        if (verifierAddress != address(0)) {
+            _zkVerifier = IZKVerifier(verifierAddress);
+        }
     }
 
     // ══════════════════════════════════════════════
@@ -208,8 +242,13 @@ contract InvoiceNFT is ERC721URIStorage {
     // ═ ZK events (emitted by off-chain backend in Phase 2 via contract calls) ═
     /// @notice Emitted when an off-chain proof has been generated and the commitment recorded.
     event ProofGenerated(uint256 indexed tokenId, bytes32 commitmentHash);
-    /// @notice Emitted when a proof has been verified on-chain.
-    event ProofVerified(uint256 indexed tokenId, address indexed verifier);
+    /**
+     * @notice Emitted when a proof has been verified on-chain (Phase 4).
+     * @param tokenId     The invoice NFT token ID.
+     * @param verifier    The address that submitted the proof for verification.
+     * @param timestamp   block.timestamp at the moment of successful verification.
+     */
+    event ProofVerified(uint256 indexed tokenId, address indexed verifier, uint256 timestamp);
 
     // ══════════════════════════════════════════════
     //  INTERNAL HELPERS
@@ -286,6 +325,9 @@ contract InvoiceNFT is ERC721URIStorage {
     function _listInvoice(uint256 tokenId, uint256 price) private {
         InvoiceNFT_Map[tokenId].currPrice = price;
         InvoiceNFT_Map[tokenId].forSale   = true;
+        if (zkMetadata[tokenId].zkEnabled) {
+            zkMetadata[tokenId].fundingPrice = price;
+        }
         emit InvoiceListedForSale(tokenId, msg.sender, price);
     }
 
@@ -390,10 +432,10 @@ contract InvoiceNFT is ERC721URIStorage {
      */
     function getZKMetadata(uint256 tokenId)
         external view
-        returns (bool zkEnabled, bytes32 commitmentHash, ProofStatus proofStatus)
+        returns (bool zkEnabled, bytes32 commitmentHash, ProofStatus proofStatus, uint256 fundingPrice)
     {
         ZKMetadata storage z = zkMetadata[tokenId];
-        return (z.zkEnabled, z.commitmentHash, z.proofStatus);
+        return (z.zkEnabled, z.commitmentHash, z.proofStatus, z.fundingPrice);
     }
 
     /// @notice Convenience getter — true if the invoice was created in private mode.
@@ -408,16 +450,141 @@ contract InvoiceNFT is ERC721URIStorage {
     /**
      * @notice Supplier calls this once after minting to mark the invoice as
      *         private (ZK-enabled). Can only be set once (idempotent guard).
-     *
-     * @dev Phase 2 will extend this to accept the initial commitment hash from
-     *      the off-chain Groth16 prover. For now the commitmentHash stays zero.
      */
     function enablePrivateInvoice(uint256 tokenId) external {
         require(InvoiceNFT_Map[tokenId].creator == msg.sender, "Only creator can enable ZK");
-        require(!zkMetadata[tokenId].zkEnabled,                "ZK already enabled for this invoice");
-        zkMetadata[tokenId].zkEnabled     = true;
-        zkMetadata[tokenId].proofStatus   = ProofStatus.NONE;
-        // commitmentHash left as zero — populated by prover in Phase 2
+        require(!zkMetadata[tokenId].zkEnabled, "ZK already enabled for this invoice");
+        zkMetadata[tokenId].zkEnabled   = true;
+        zkMetadata[tokenId].proofStatus = ProofStatus.NONE;
+    }
+
+    // ══════════════════════════════════════════════
+    //  ZK PHASE 3 – PROOF STORAGE & STATUS UPDATES
+    // ══════════════════════════════════════════════
+
+    /**
+     * @notice Called by the off-chain backend after proof generation.
+     *         Records the Poseidon commitment and a keccak256 hash of the
+     *         proof blob for on-chain integrity anchoring.
+     *
+     * @param tokenId        The invoice token ID.
+     * @param commitment     Poseidon(invoiceId, buyerAddress, amount, secret).
+     * @param proofHash      keccak256 of the serialised proof.json blob.
+     */
+    function storeZKProof(
+        uint256 tokenId,
+        bytes32 commitment,
+        bytes32 proofHash
+    ) external {
+        require(InvoiceNFT_Map[tokenId].creator == msg.sender, "Only creator can store proof");
+        require(zkMetadata[tokenId].zkEnabled, "ZK not enabled for this invoice");
+        zkMetadata[tokenId].commitmentHash = commitment;
+        zkMetadata[tokenId].proofHash      = proofHash;
+        zkMetadata[tokenId].proofStatus    = ProofStatus.GENERATED;
+        if (InvoiceNFT_Map[tokenId].forSale) {
+            zkMetadata[tokenId].fundingPrice = InvoiceNFT_Map[tokenId].currPrice;
+        }
+        emit ProofGenerated(tokenId, commitment);
+    }
+
+    /**
+     * @notice Supplier sets the face value for a ZK-enabled private invoice.
+     *         This is the amount the buyer must repay (settlement amount),
+     *         which differs from the funding price the financier pays.
+     *
+     *         Must be called after storeZKProof() and before the invoice is bought.
+     *         Immutable after first assignment.
+     *
+     * @param tokenId    The invoice token ID.
+     * @param faceValue  True invoice face value in wei (e.g. 100 ETH).
+     */
+    function setZKInvoiceFaceValue(uint256 tokenId, uint256 faceValue) external {
+        require(InvoiceNFT_Map[tokenId].creator == msg.sender,  "Only creator can set face value");
+        require(zkMetadata[tokenId].zkEnabled,                   "Not a ZK invoice");
+        require(invoiceFaceValue[tokenId] == 0,                  "Face value already set and is immutable");
+        require(faceValue > 0,                                   "Face value must be greater than zero");
+        // Face value must be >= funding price (listing price)
+        require(faceValue >= zkMetadata[tokenId].fundingPrice,   "Face value must be >= funding price");
+        invoiceFaceValue[tokenId] = faceValue;
+    }
+
+    /**
+     * @notice Called by the off-chain backend after successful proof verification.
+     *         Only the current NFT owner (financier) may call this.
+     *
+     * @param tokenId  The invoice token ID.
+     * @param success  true → VERIFIED, false → FAILED.
+     */
+    /**
+     * @notice Phase 3 status updater — still supported for backward compatibility.
+     *         Phase 4 callers should use verifyAndFund() instead.
+     */
+    function updateProofStatus(uint256 tokenId, bool success) external {
+        require(zkMetadata[tokenId].zkEnabled,                           "ZK not enabled");
+        require(zkMetadata[tokenId].proofStatus == ProofStatus.GENERATED, "Proof not yet generated");
+        if (success) {
+            zkMetadata[tokenId].proofStatus         = ProofStatus.VERIFIED;
+            zkMetadata[tokenId].verificationBlock    = block.number;
+            zkMetadata[tokenId].verificationTimestamp = block.timestamp;
+            emit ProofVerified(tokenId, msg.sender, block.timestamp);
+        } else {
+            zkMetadata[tokenId].proofStatus = ProofStatus.FAILED;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    //  ZK PHASE 4 – ON-CHAIN GROTH16 VERIFICATION
+    // ══════════════════════════════════════════════
+
+    /**
+     * @notice Verify a Groth16 proof on-chain and mark the invoice as VERIFIED.
+     *         This is the authoritative verification step — the blockchain is
+     *         the final authority.  Backend snarkjs verification is optional
+     *         and only used for off-chain user feedback.
+     *
+     * @dev  Called by the financier (or any party that holds the proof) BEFORE
+     *       calling buyInvoice on a private invoice.  Once VERIFIED, buyInvoice
+     *       can proceed.
+     *
+     * @param tokenId       Invoice token ID.
+     * @param _pA           Proof element π_a  (G1 point).
+     * @param _pB           Proof element π_b  (G2 point).
+     * @param _pC           Proof element π_c  (G1 point).
+     * @param _pubSignals   4 public signals: [invoiceId, buyerAddr, minThreshold, commitment].
+     */
+    function verifyAndFund(
+        uint256          tokenId,
+        uint256[2]    calldata _pA,
+        uint256[2][2] calldata _pB,
+        uint256[2]    calldata _pC,
+        uint256[4]    calldata _pubSignals
+    ) external {
+        ZKMetadata storage zk = zkMetadata[tokenId];
+
+        require(zk.zkEnabled,                                    "ZK not enabled for this invoice");
+        require(zk.proofStatus == ProofStatus.GENERATED,         "Proof must be in GENERATED state");
+        require(address(_zkVerifier) != address(0),              "On-chain verifier not configured");
+
+        // ── On-chain Groth16 verification (EVM pairing check) ────────────
+        bool ok = _zkVerifier.verifyProof(_pA, _pB, _pC, _pubSignals);
+
+        if (ok) {
+            zk.proofStatus            = ProofStatus.VERIFIED;
+            zk.verificationBlock      = block.number;
+            zk.verificationTimestamp  = block.timestamp;
+            emit ProofVerified(tokenId, msg.sender, block.timestamp);
+        } else {
+            zk.proofStatus = ProofStatus.FAILED;
+            revert("ZK proof verification failed");
+        }
+    }
+
+    /**
+     * @notice Returns the address of the current ZK verifier contract.
+     *         Can be used by frontends and tooling to confirm the verifier in use.
+     */
+    function getVerifier() external view returns (address) {
+        return address(_zkVerifier);
     }
 
     // ══════════════════════════════════════════════
@@ -629,9 +796,10 @@ contract InvoiceNFT is ERC721URIStorage {
 
         uint8 riskScore     = calculateRiskScore(invoice.buyer, _tokenId);
         uint8 recDiscount   = uint8(uint256(MIN_DISCOUNT) + (uint256(MAX_DISCOUNT - MIN_DISCOUNT) * uint256(riskScore)) / 100);
-        uint8 finalDiscount = (invoice.invoiceAmount > 0 && _price < invoice.invoiceAmount)
-            ? uint8(((invoice.invoiceAmount - _price) * 100) / invoice.invoiceAmount)
-            : 0;
+        uint8 finalDiscount = 0;
+        if (!zkMetadata[_tokenId].zkEnabled && invoice.invoiceAmount > 0 && _price < invoice.invoiceAmount) {
+            finalDiscount = uint8(((invoice.invoiceAmount - _price) * 100) / invoice.invoiceAmount);
+        }
 
         discountRecommendations[_tokenId] = DiscountRecommendation({
             riskScore:           riskScore,
@@ -652,7 +820,11 @@ contract InvoiceNFT is ERC721URIStorage {
         InvoiceMetadata storage invoice = InvoiceNFT_Map[_tokenId];
         require(ownerOf(_tokenId) == msg.sender, "Only the owner can revoke this listing");
         require(invoice.forSale,                 "Invoice is not listed for sale");
-        invoice.currPrice = invoice.invoiceAmount;
+        if (zkMetadata[_tokenId].zkEnabled) {
+            invoice.currPrice = zkMetadata[_tokenId].fundingPrice;
+        } else {
+            invoice.currPrice = invoice.invoiceAmount;
+        }
         invoice.forSale   = false;
         emit InvoiceSaleRevoked(_tokenId, msg.sender);
     }
@@ -665,15 +837,43 @@ contract InvoiceNFT is ERC721URIStorage {
         InvoiceMetadata storage invoice = InvoiceNFT_Map[_tokenId];
         address currentOwner = ownerOf(_tokenId);
 
-        require(invoice.forSale,                   "Invoice is not listed for sale");
-        require(msg.sender != currentOwner,         "Owner cannot buy their own invoice");
-        require(msg.value == invoice.currPrice,     "Incorrect payment amount");
+        require(invoice.forSale,               "Invoice is not listed for sale");
+        require(msg.sender != currentOwner,    "Owner cannot buy their own invoice");
+        require(msg.value == invoice.currPrice, "Incorrect payment amount");
+
+        // ── ZK Phase 4 Gate ────────────────────────────────────────────
+        // Private invoices MUST have been verified on-chain via verifyAndFund()
+        // before funding is allowed.  Standard invoices bypass this check.
+        ZKMetadata storage zk = zkMetadata[_tokenId];
+        if (zk.zkEnabled) {
+            require(
+                zk.proofStatus == ProofStatus.VERIFIED,
+                "Private invoice: on-chain proof verification required before funding"
+            );
+        }
 
         payable(currentOwner).transfer(msg.value);
         _safeTransfer(currentOwner, msg.sender, _tokenId, "");
 
-        invoice.forSale   = false;
-        invoice.currPrice = invoice.invoiceAmount;
+        invoice.forSale = false;
+
+        // ── INVARIANT: settlement must always use the original face value.
+        //    Reset currPrice to the face value regardless of ZK or standard mode.
+        //    For standard invoices: invoiceAmount holds the face value (set at mint).
+        //    For ZK invoices: invoiceFaceValue[tokenId] holds the face value if the
+        //    supplier called setZKInvoiceFaceValue(); otherwise currPrice will be 0
+        //    (ZK invoices mint with invoiceAmount = 0 for privacy — the buyer must
+        //    settle via setZKInvoiceFaceValue before funding, or the contract will
+        //    require msg.value == 0 and revert).
+        //    The fundingPrice in ZKMetadata is preserved for reference only.
+        if (zk.zkEnabled && invoiceFaceValue[_tokenId] > 0) {
+            invoice.currPrice = invoiceFaceValue[_tokenId];
+        } else {
+            // Standard invoices: invoiceAmount is always the face value.
+            // ZK invoices where setZKInvoiceFaceValue was NOT called: currPrice = 0
+            // (settleInvoice will revert with 'Incorrect payment amount' until set).
+            invoice.currPrice = invoice.invoiceAmount;
+        }
 
         // Credit scoring — _updateCreditScore handles _initCreditProfile internally
         _updateCreditScore(currentOwner, int16(int8(SUPPLIER_REWARD)),  "Funding received");
@@ -684,7 +884,7 @@ contract InvoiceNFT is ERC721URIStorage {
         creditProfiles[invoice.creator].fundedInvoices++;
         creditProfiles[msg.sender].activeInvestments++;
         creditProfiles[msg.sender].totalCapitalInvested    += msg.value;
-        invoiceInvestmentAmount[_tokenId]                   = msg.value;
+        invoiceInvestmentAmount[_tokenId]                   = msg.value;   // records funding price
         emit InvoiceBought(_tokenId, currentOwner, msg.sender, msg.value);
     }
 
@@ -698,7 +898,16 @@ contract InvoiceNFT is ERC721URIStorage {
 
         require(msg.sender == invoice.buyer, "Only the designated buyer can settle this invoice");
         require(invoice.isApproved,          "Invoice has not been approved by the buyer");
-        require(msg.value == invoice.currPrice, "Incorrect payment amount");
+
+        // ── INVARIANT 4: Settlement must always use the original face value. ──────
+        //    After buyInvoice(), invoice.currPrice has been reset to the face value:
+        //      - Standard invoices: currPrice = invoiceAmount (set at mint)
+        //      - ZK invoices:       currPrice = invoiceFaceValue[tokenId] (set by supplier)
+        //    The buyer repays the face value; the financier's profit is the spread
+        //    between what they paid (funding price) and what they receive (face value).
+        // ────────────────────────────────────────────────────────────────────────
+        uint256 settlementAmount = invoice.currPrice; // face value after buyInvoice() reset
+        require(msg.value == settlementAmount, "Incorrect payment amount: must equal invoice face value");
 
         payable(currentOwner).transfer(msg.value);
         _safeTransfer(currentOwner, msg.sender, _tokenId, "");
@@ -731,13 +940,17 @@ contract InvoiceNFT is ERC721URIStorage {
 
         _updateCreditScore(currentOwner, int16(int8(REPAYMENT_REWARD)), "Repayment received");
 
-        // BBCS: track settlement for supplier + close out financier position
+        // ── INVARIANT 7: Financier analytics must reflect actual profit. ──────────
+        //    totalCapitalRecovered += msg.value  (= face value = 100 ETH)
+        //    totalInvestedInCompleted += invoiceInvestmentAmount (= funding price = 95 ETH)
+        //    → ROI = (recovered - invested) / invested = (100 - 95) / 95 = 5.26%
+        // ────────────────────────────────────────────────────────────────────────
         creditProfiles[invoice.creator].settledInvoices++;
         if (currentOwner != invoice.creator) {
             creditProfiles[currentOwner].activeInvestments--;
             creditProfiles[currentOwner].completedInvestments++;
             creditProfiles[currentOwner].totalInvestedInCompleted += invoiceInvestmentAmount[_tokenId];
-            creditProfiles[currentOwner].totalCapitalRecovered    += msg.value;
+            creditProfiles[currentOwner].totalCapitalRecovered    += msg.value;  // face value received
         }
 
         emit InvoiceSettled(_tokenId, currentOwner, msg.sender, msg.value);

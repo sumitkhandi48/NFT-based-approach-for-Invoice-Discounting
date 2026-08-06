@@ -6,6 +6,7 @@ const NETWORKS = {
         rpcUrl: process.env.GANACHE_RPC_URL,
         contractAddress: process.env.GANACHE_CONTRACT_ADDRESS,
         chainId: 1337,
+        deployBlock: 0,  // scan from genesis; updated each redeploy
     },
 
     sepolia: {

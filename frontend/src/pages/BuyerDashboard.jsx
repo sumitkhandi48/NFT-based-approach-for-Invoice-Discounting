@@ -81,16 +81,22 @@ function BuyerDashboard() {
     }
 
     async function refreshBalances() {
-        if (!account || !provider) {
+        if (!account) {
             setWalletAddress("");
             setWalletBalance("0");
             return;
         }
-        const signer = await provider.getSigner();
-        const activeAddress = await signer.getAddress();
-        const walletWei = await provider.getBalance(activeAddress);
-        setWalletAddress(activeAddress);
-        setWalletBalance(ethers.formatEther(walletWei));
+        try {
+            // Use JsonRpcProvider (direct Ganache call) instead of BrowserProvider.
+            // BrowserProvider delegates to MetaMask which caches the balance and
+            // returns stale data after a Ganache restart — causing the mismatch.
+            const directProvider = getReadOnlyProvider();
+            const walletWei = await directProvider.getBalance(account);
+            setWalletAddress(account);
+            setWalletBalance(ethers.formatEther(walletWei));
+        } catch (err) {
+            console.error("Failed to refresh balance:", err);
+        }
     }
 
     // ── ZK Phase-1: bulk-fetch privacy status for a list of invoices ─────────
@@ -421,7 +427,7 @@ function BuyerDashboard() {
                             {invoices.map((inv) => (
                                 <tr key={inv.tokenId}>
                                     <td>{inv.tokenId}</td>
-                                    <td>{inv.invoiceAmount} ETH</td>
+                                    <td>{inv.invoiceAmount === null ? "🔒 Private" : `${inv.invoiceAmount} ETH`}</td>
                                     <td>{inv.dueDate}</td>
                                     <td>
                                         <span className={inv.isApproved ? "badge badge-green" : "badge badge-grey"}>
@@ -494,7 +500,9 @@ function BuyerDashboard() {
             <section className="section-card">
                 <h2>Settle Invoice</h2>
                 <p style={{ marginBottom: "12px", color: "#4a4a4a" }}>
-                    Repay the financier by settling the invoice. Settling on or before the due date increases the buyer's credit score, while settling after the due date reduces it.
+                    Repay the financier by settling the invoice at the original face value.
+                    The financier's profit equals the difference between the face value
+                    and the discounted funding price they paid.
                     <span style={{ marginLeft: "8px", fontSize: "0.8rem", color: "#6b7280" }}>
                         (On-time: <span style={{ color: "#22c55e" }}>+5</span> | Late: <span style={{ color: "#ef4444" }}>−5</span> credit score)
                     </span>

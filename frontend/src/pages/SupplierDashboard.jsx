@@ -22,9 +22,16 @@ function scoreColour(score) {
     return "#ef4444";                   // red
 }
 
+function scoreLabel(score) {
+    if (score >= 80) return "Excellent";
+    if (score >= 65) return "Good";
+    if (score >= 50) return "Fair";
+    return "Poor";
+}
+
 function SupplierDashboard() {
     const { account, provider, roles } = useWallet();
-    const { getSignerContract, getReadOnlyContract } = useContract();
+    const { getSignerContract, getReadOnlyContract, getReadOnlyProvider } = useContract();
 
     // ── existing state ──────────────────────────────────────────────────────
     const [file, setFile] = useState(null);
@@ -63,8 +70,15 @@ function SupplierDashboard() {
     const [recTokenId, setRecTokenId] = useState("");      // tracks which tokenId rec was fetched for
     const [useRecommended, setUseRecommended] = useState(false);
 
-    // ── ZK Phase-1 toggle ─────────────────────────────────────────
-    const [zkEnabled, setZkEnabled] = useState(false); // supplier opts in to Groth16 private mode
+    // ── ZK Phase-1/3 toggle + proof state ────────────────────────────
+    const [zkEnabled, setZkEnabled]         = useState(false);
+    const [zkTokenId, setZkTokenId]         = useState("");          // which token to generate proof for
+    const [zkAmount, setZkAmount]           = useState("");          // face value of the invoice
+    const [zkSecret, setZkSecret]           = useState("");          // blinding factor (supplier-only)
+    const [zkThreshold, setZkThreshold]     = useState("");          // min threshold in ETH
+    const [zkGenerating, setZkGenerating]   = useState(false);
+    const [zkProofResult, setZkProofResult] = useState(null);        // { commitment, proofHash, generationTimeMs, proofStatus }
+    const [zkProofMsg, setZkProofMsg]       = useState("");
 
     // ── fetch helpers ───────────────────────────────────────────────────────
     async function fetchInvoices() {
@@ -95,16 +109,22 @@ function SupplierDashboard() {
     }
 
     async function refreshBalances() {
-        if (!account || !provider) {
+        if (!account) {
             setWalletAddress("");
             setWalletBalance("0");
             return;
         }
-        const signer = await provider.getSigner();
-        const activeAddress = await signer.getAddress();
-        const walletWei = await provider.getBalance(activeAddress);
-        setWalletAddress(activeAddress);
-        setWalletBalance(ethers.formatEther(walletWei));
+        try {
+            // Use JsonRpcProvider (direct Ganache call) instead of BrowserProvider.
+            // BrowserProvider delegates to MetaMask which caches the balance and
+            // returns stale data after a Ganache restart — causing the mismatch.
+            const directProvider = getReadOnlyProvider();
+            const walletWei = await directProvider.getBalance(account);
+            setWalletAddress(account);
+            setWalletBalance(ethers.formatEther(walletWei));
+        } catch (err) {
+            console.error("Failed to refresh balance:", err);
+        }
     }
 
     // ── NEW: fetch credit profile for the connected supplier ────────────────
@@ -115,6 +135,7 @@ function SupplierDashboard() {
             const contract = getReadOnlyContract();
             const raw      = await contract.getCreditProfile(account);
             setCreditProfile({
+                score:            Number(raw.score),
                 totalInvoices:    Number(raw.totalInvoices),
                 approvedInvoices: Number(raw.approvedInvoices),
                 fundedInvoices:   Number(raw.fundedInvoices),
@@ -167,7 +188,7 @@ function SupplierDashboard() {
         try {
             const signer = await provider.getSigner();
             const contract = getSignerContract(signer);
-            const amountWei = ethers.parseEther(mintAmount);
+            const amountWei = zkEnabled ? 0n : ethers.parseEther(mintAmount);
             const tx = await contract.mintInvoice(cid, mintBuyer, amountWei, mintDueDate);
             console.log("Mint tx hash:", tx.hash);
             const receipt = await tx.wait();
@@ -197,6 +218,8 @@ function SupplierDashboard() {
                         const zkTx = await contract.enablePrivateInvoice(tokenId);
                         await zkTx.wait();
                         console.log(`ZK enabled for token ${tokenId}`);
+                        // Save face value to localStorage so supplier can see it locally
+                        localStorage.setItem(`zk_invoice_amount_${tokenId}`, mintAmount);
                     } catch (zkErr) {
                         console.warn("Could not enable ZK for invoice:", zkErr.message);
                     }
@@ -208,6 +231,8 @@ function SupplierDashboard() {
             setMintMsg(`✅ Invoice NFT minted successfully! Tx: ${tx.hash}`);
             setMintBuyer(""); setMintAmount(""); setMintDueDate("");
             setCid(""); setFile(null);
+            // Set zkTokenId to the newly minted token for easy proof generation
+            if (mintedEvent && zkEnabled) setZkTokenId(String(mintedEvent.args.tokenId));
             fetchInvoices();
             refreshBalances();
             fetchCreditProfile();
@@ -235,9 +260,12 @@ function SupplierDashboard() {
             const inv = invoices.find((i) => i.tokenId === Number(listTokenId));
             let recommendedPriceEth = "";
             if (inv) {
-                const amountEth = parseFloat(inv.invoiceAmount);
-                const discounted = amountEth * (1 - recPct / 100);
-                recommendedPriceEth = discounted.toFixed(6);
+                const localSavedAmount = localStorage.getItem(`zk_invoice_amount_${listTokenId}`);
+                const amountEth = parseFloat(inv.invoiceAmount !== null ? inv.invoiceAmount : localSavedAmount);
+                if (!isNaN(amountEth)) {
+                    const discounted = amountEth * (1 - recPct / 100);
+                    recommendedPriceEth = discounted.toFixed(6);
+                }
             }
 
             setRecData({ riskScore: risk, recommendedDiscount: recPct, recommendedPriceEth });
@@ -268,9 +296,13 @@ function SupplierDashboard() {
 
         const invoice = invoices.find((inv) => inv.tokenId === Number(listTokenId));
         if (invoice) {
-            const invoiceAmountNum = Number(invoice.invoiceAmount);
-            if (numPrice > invoiceAmountNum) {
-                return setListMsg("The discounted price cannot exceed the original invoice amount.");
+            const localSavedAmount = localStorage.getItem(`zk_invoice_amount_${listTokenId}`);
+            const effectiveAmount = invoice.invoiceAmount !== null ? invoice.invoiceAmount : localSavedAmount;
+            if (effectiveAmount) {
+                const invoiceAmountNum = Number(effectiveAmount);
+                if (numPrice > invoiceAmountNum) {
+                    return setListMsg("The discounted price cannot exceed the original invoice amount.");
+                }
             }
         }
 
@@ -311,6 +343,76 @@ function SupplierDashboard() {
         }
     }
 
+    // ── ZK Phase-3: generate Groth16 proof for a private invoice ────────────
+    async function handleGenerateProof() {
+        if (!account)    return setZkProofMsg("❌ Please connect your wallet.");
+        if (!zkTokenId)  return setZkProofMsg("❌ Enter the Token ID.");
+        
+        const localSavedAmount = localStorage.getItem(`zk_invoice_amount_${zkTokenId}`);
+        const effectiveAmount = zkAmount || localSavedAmount;
+        if (!effectiveAmount) return setZkProofMsg("❌ Enter the face value (ETH).");
+        
+        if (!zkSecret)   return setZkProofMsg("❌ Enter an invoice secret (blinding factor).");
+        if (!zkThreshold) return setZkProofMsg("❌ Enter the minimum financing threshold (ETH).");
+
+        const invoice = invoices.find(i => String(i.tokenId) === String(zkTokenId));
+        if (!invoice) return setZkProofMsg("❌ Invoice not found. Refresh your invoice list.");
+
+        setZkGenerating(true);
+        setZkProofMsg("Generating Groth16 proof… this may take a few seconds.");
+        setZkProofResult(null);
+
+        try {
+            // Convert buyer address to decimal field element
+            const buyerDecimal = BigInt(invoice.buyer ?? mintBuyer).toString();
+            const amountWei    = ethers.parseEther(effectiveAmount).toString();
+            const threshWei    = ethers.parseEther(zkThreshold).toString();
+
+            const res = await fetch(`${BACKEND_URL}/zk/generate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    invoiceId:        zkTokenId,
+                    buyerAddress:     buyerDecimal,
+                    invoiceAmount:    amountWei,
+                    invoiceSecret:    zkSecret,
+                    minimumThreshold: threshWei,
+                }),
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message || "Proof generation failed");
+
+            // Record proof on-chain: storeZKProof(tokenId, commitment_bytes32, proofHash_bytes32)
+            const signer   = await provider.getSigner();
+            const contract = getSignerContract(signer);
+
+            // commitment is a decimal string from Poseidon — convert to bytes32
+            const commitmentHex = "0x" + BigInt(data.commitment).toString(16).padStart(64, "0");
+            const proofHashHex  = data.proofHash.startsWith("0x") ? data.proofHash : "0x" + data.proofHash;
+
+            const tx = await contract.storeZKProof(
+                BigInt(zkTokenId),
+                commitmentHex,
+                proofHashHex
+            );
+            await tx.wait();
+
+            setZkProofResult({
+                commitment:       data.commitment,
+                proofHash:        data.proofHash,
+                generationTimeMs: data.generationTimeMs,
+                proofStatus:      "GENERATED",
+            });
+            setZkProofMsg(`✅ Proof generated and recorded on-chain! (${data.generationTimeMs} ms)`);
+        } catch (err) {
+            console.error("[ZK generate] Error:", err);
+            setZkProofMsg(`❌ ${getFriendlyErrorMessage(err, "Proof generation failed.")}`);
+        } finally {
+            setZkGenerating(false);
+        }
+    }
+
+    // ── existing revoke handler ─────────────────────────────────────────────
     async function handleRevoke() {
         if (!account) return setRevokeMsg("Please connect your wallet.");
         if (!revokeTokenId) return setRevokeMsg("Please enter a Token ID.");
@@ -506,6 +608,72 @@ function SupplierDashboard() {
                 {mintMsg && <p className="form-msg">{mintMsg}</p>}
             </section>
 
+            {/* ── ZK Phase-3: Generate Proof (only shown when zkEnabled + invoice exists) ── */}
+            <section className="section-card">
+                <h2>🔒 Private Invoice — Generate Proof</h2>
+                <p style={{ marginBottom: "12px", fontSize: "0.85rem", color: "#6b7280" }}>
+                    Generate a Groth16 zero-knowledge proof for a private invoice.
+                    The proof is stored off-chain; only the commitment and proof hash
+                    are recorded on-chain.
+                </p>
+
+                <div className="form-group">
+                    <label>Token ID (Private Invoice)</label>
+                    <input type="number" value={zkTokenId}
+                        onChange={e => {
+                            setZkTokenId(e.target.value);
+                            const saved = localStorage.getItem(`zk_invoice_amount_${e.target.value}`);
+                            if (saved) setZkAmount(saved);
+                        }}
+                        placeholder="Token ID from your mint" className="form-input" />
+                </div>
+                <div className="form-group">
+                    <label>Face Value (ETH — kept private, local witness only)</label>
+                    <input type="number" value={zkAmount}
+                        onChange={e => setZkAmount(e.target.value)}
+                        placeholder="e.g. 1.5" className="form-input" />
+                </div>
+                <div className="form-group">
+                    <label>Invoice Secret (blinding factor — keep private)</label>
+                    <input type="text" value={zkSecret}
+                        onChange={e => setZkSecret(e.target.value)}
+                        placeholder="e.g. 123456789012345678901234567890" className="form-input" />
+                    <p style={{ margin: "4px 0 0", fontSize: "0.75rem", color: "#9ca3af" }}>
+                        Choose any large random number. Never share this with anyone.
+                    </p>
+                </div>
+                <div className="form-group">
+                    <label>Minimum Financing Threshold (ETH)</label>
+                    <input type="number" value={zkThreshold}
+                        onChange={e => setZkThreshold(e.target.value)}
+                        placeholder="e.g. 0.5" className="form-input" />
+                </div>
+
+                <button className="btn btn-primary"
+                    onClick={handleGenerateProof}
+                    disabled={zkGenerating}
+                    style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
+                    {zkGenerating ? "Generating Proof…" : "Generate Proof"}
+                </button>
+
+                {zkProofMsg && <p className="form-msg">{zkProofMsg}</p>}
+
+                {zkProofResult && (
+                    <div style={{
+                        marginTop: "14px", padding: "12px 16px",
+                        background: "rgba(99,102,241,0.05)", border: "1px solid #c7d2fe",
+                        borderRadius: "8px", fontSize: "0.82rem",
+                    }}>
+                        <div><span className="balance-label">Proof Status</span><br />
+                            <strong style={{ color: "#22c55e" }}>🔒 {zkProofResult.proofStatus}</strong></div>
+                        <div style={{ marginTop: "8px" }}><span className="balance-label">Generation Time</span><br />
+                            <strong>{zkProofResult.generationTimeMs} ms</strong></div>
+                        <div style={{ marginTop: "8px" }}><span className="balance-label">Proof Hash (on-chain)</span><br />
+                            <code style={{ fontSize: "0.72rem", wordBreak: "break-all" }}>{zkProofResult.proofHash}</code></div>
+                    </div>
+                )}
+            </section>
+
             {/* ── Your Invoices (unchanged) ─────────────────────────────────── */}
             <section className="section-card">
                 <h2>Your Invoices</h2>
@@ -530,7 +698,13 @@ function SupplierDashboard() {
                             {invoices.map((inv) => (
                                 <tr key={inv.tokenId}>
                                     <td>{inv.tokenId}</td>
-                                    <td>{inv.invoiceAmount} ETH</td>
+                                    <td>
+                                        {inv.invoiceAmount !== null 
+                                            ? `${inv.invoiceAmount} ETH` 
+                                            : (localStorage.getItem(`zk_invoice_amount_${inv.tokenId}`) 
+                                                ? `${localStorage.getItem(`zk_invoice_amount_${inv.tokenId}`)} ETH (🔒 Private)` 
+                                                : "🔒 Private")}
+                                    </td>
                                     <td>{inv.dueDate}</td>
                                     <td>
                                         <span className={inv.isApproved ? "badge badge-green" : "badge badge-grey"}>

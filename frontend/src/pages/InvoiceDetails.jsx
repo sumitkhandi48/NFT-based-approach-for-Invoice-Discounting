@@ -63,7 +63,13 @@ function InvoiceDetails() {
                         </tr>
                         <tr>
                             <td>Invoice Amount</td>
-                            <td>{invoice.invoiceAmount} ETH</td>
+                            <td>
+                                {invoice.invoiceAmount !== null 
+                                    ? `${invoice.invoiceAmount} ETH` 
+                                    : (localStorage.getItem(`zk_invoice_amount_${invoice.tokenId}`) 
+                                        ? `${localStorage.getItem(`zk_invoice_amount_${invoice.tokenId}`)} ETH (🔒 Private)` 
+                                        : "🔒 Private")}
+                            </td>
                         </tr>
                         <tr>
                             <td>Current Price</td>

@@ -20,9 +20,9 @@ export function WalletProvider({ children }) {
                     const localProvider = new ethers.JsonRpcProvider(import.meta.env.VITE_GANACHE_RPC_URL || "http://127.0.0.1:8545");
                     const accs = await localProvider.listAccounts();
                     if (accs.length >= 3) {
-                        supplier = supplier || accs[0].address;
-                        buyer = buyer || accs[1].address;
-                        financier = financier || accs[2].address;
+                        supplier = supplier || (await accs[0].getAddress());
+                        buyer = buyer || (await accs[1].getAddress());
+                        financier = financier || (await accs[2].getAddress());
                     }
                 } catch (e) {
                     console.warn("Could not fetch fallback accounts:", e);

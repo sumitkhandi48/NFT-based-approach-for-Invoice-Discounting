@@ -10,6 +10,14 @@ export async function getInvoiceMetadata(tokenId) {
     const owner = await contract.ownerOf(tokenIdNumber);
     const mintEvent = await getMintEvent(tokenIdNumber);
 
+    let zkEnabled = false;
+    try {
+        const zkData = await contract.zkMetadata(tokenIdNumber);
+        zkEnabled = zkData ? zkData[0] : false;
+    } catch (err) {
+        console.warn(`[getInvoiceMetadata] Could not fetch zkMetadata for token ${tokenIdNumber}:`, err.message);
+    }
+
     return {
         source: "blockchain",
         tokenId: tokenIdNumber,
@@ -17,7 +25,7 @@ export async function getInvoiceMetadata(tokenId) {
         buyer: data.buyer,
         currentOwner: owner,
         currPrice: ethers.formatEther(data.currPrice),
-        invoiceAmount: ethers.formatEther(data.invoiceAmount),
+        invoiceAmount: zkEnabled ? null : ethers.formatEther(data.invoiceAmount),
         dueDate: data.dueDate,
         isApproved: data.isApproved,
         forSale: data.forSale,
@@ -26,6 +34,7 @@ export async function getInvoiceMetadata(tokenId) {
         stage: getInvoiceStage(data, owner),
         mintTxHash: mintEvent?.transactionHash ?? null,
         mintBlock: mintEvent?.blockNumber ?? null,
+        zkEnabled,
     };
 }
 

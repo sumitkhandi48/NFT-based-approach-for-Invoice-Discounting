@@ -22,8 +22,13 @@ describe("InvoiceNFT", function () {
 
         [supplier, buyer, financier, other] = await ethers.getSigners();
 
+        const Groth16Verifier = await ethers.getContractFactory("Groth16Verifier");
+        const verifier = await Groth16Verifier.deploy();
+        await verifier.waitForDeployment();
+        const verifierAddress = await verifier.getAddress();
+
         const InvoiceNFT = await ethers.getContractFactory("InvoiceNFT");
-        invoiceNFT = await InvoiceNFT.deploy();
+        invoiceNFT = await InvoiceNFT.deploy(verifierAddress);
         await invoiceNFT.waitForDeployment();
     });
 

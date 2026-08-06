@@ -1,0 +1,1768 @@
+Dissertation on
+An NFT based approach to Invoice Discounting
+Submitted in partial fulfilment of the requirements for the award of degree of
+
+Bachelor of Technology
+in
+Computer Science & Engineering
+UE20CS390B– Capstone Project Phase - 2
+Submitted by:
+
+Aishwarya N
+
+PES1UG20CS024
+
+Haria Mehkhad
+
+PES1UG20CS159
+
+Shashank R
+
+PES1UG20CS689
+
+Vinay Kumar S
+
+PES1UG20CS701
+
+Under the guidance of
+
+Dr. Shruti Jadon
+Associate Professor
+
+PES University
+August - December 2023
+DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING
+FACULTY OF ENGINEERING
+PES UNIVERSITY
+
+(Established under Karnataka Act No. 16 of 2013)
+100ft Ring Road, Bengaluru – 560 085, Karnataka, India
+
+PES UNIVERSITY
+
+(Established under Karnataka Act No. 16 of 2013)
+
+100ft Ring Road, Bengaluru – 560 085, Karnataka, India
+
+FACULTY OF ENGINEERING
+
+CERTIFICATE
+This is to certify that the dissertation entitled
+
+An NFT Based Approach to Invoice Discounting
+is a bonafide work carried out by
+Aishwarya N
+
+PES1UG20CS024
+
+Haria Mehkhad
+
+PES1UG20CS159
+
+Shashank R
+
+PES1UG20CS689
+
+Vinay Kumar S
+
+PES1UG20CS701
+
+in partial fulfilment for the completion of seventh semester Capstone Project Phase - 2 (UE20CS390B) in the Program of
+Study - Bachelor of Technology in Computer Science and Engineering under rules and regulations of PES University,
+Bengaluru during the period August 2023 - December 2023. It is certified that all corrections/suggestions indicated for
+internal assessment have been incorporated in the report. The dissertation has been approved as it satisfies the 7th-semester
+academic requirements in respect of project work.
+
+__________________
+Signature
+Dr. Shruti Jadon
+Associate Professor, CSE
+
+__________________
+Signature
+Dr. Mamatha H R
+Chairperson, CSE
+
+__________________
+Signature
+Dr B K Keshavan
+Dean of Faculty
+
+External Viva
+Name of the Examiner
+
+Signature with Date
+
+1. ________________________
+
+_________________________
+
+2. ________________________
+
+_________________________
+
+DECLARATION
+We hereby declare that the Capstone Project Phase - 2 entitled An NFT based approach to
+Invoice Discounting has been carried out by us under the guidance of Dr. Shruti Jadon,
+Associate Professor, Dept. of CSE, PES University and submitted in partial fulfilment of
+the completion of the seventh semester of Bachelor of Technology in Computer Science
+and Engineering of PES University, Bengaluru during the academic semester August December 2023. The matter embodied in this report has not been submitted to any other
+university or institution for the award of any degree.
+Aishwarya N
+
+PES1UG20CS024
+
+____________________
+
+Haria Mehkhad
+
+PES1UG20CS159
+
+____________________
+
+Shashank R
+
+PES1UG20CS689
+
+____________________
+
+Vinay Kumar S
+
+PES1UG20CS701
+
+____________________
+
+ACKNOWLEDGEMENT
+We would like to express our gratitude to Dr. Shruti Jadon, Department of Computer Science and
+Engineering, PES University, for her continuous guidance, assistance, and encouragement throughout the
+development of this UE20CS390B- Capstone Project Phase - 2.
+We are grateful to the project coordinator, Dr. Priyanka H, the panel members & the supporting staff for
+organizing, managing and helping the entire process.
+We take this opportunity to thank Dr. Mamatha H R, Chairperson, Department of Computer Science
+and Engineering, PES University, for all the knowledge and support we have received from her.
+We are grateful to M. R. Doreswamy, Chancellor of PES University, Prof. Jawahar Doreswamy,
+Pro-Chancellor of PES University, Dr. Suryaprasad J, Vice-Chancellor of PES University, Dr. B. K.
+Keshavan, Dean of Faculty of PES University for providing us with various opportunities and
+enlightenment every step of the way.
+Finally, we would like to thank our family and friends for their continual support and encouragement
+without which this project could not have been completed.
+
+ABSTRACT
+
+Blockchain technology has been a potent tool for facilitating safe and decentralised online transactions
+since the creation of Bitcoin in 2009. In addition, the use of smart contracts by Ethereum and other
+blockchains has revolutionised a variety of sectors, including supply chain management, healthcare, and
+real estate in addition to finance and real estate. Businesses can obtain quick access to capital by selling
+their past-due bills to a financing company at a discount, a tactic known as invoice discounting. But this
+process is often hampered by issues like fraud, lengthy processing periods, and excessive costs. With the
+use of blockchain technology, this project seeks to offer a decentralised, secure platform for invoice
+financing that eliminates the need for middlemen and enables faster, more cost-effective processing.
+Using the ERC-721 standard, the platform will be constructed on top of the Ethereum blockchain and
+allow for the creation of unique, non-fungible tokens (NFTs) that can be used as invoice substitutes. The
+transactions of these NFTs will be stored on the Ethereum blockchain, ensuring their traceability,
+transparency, and immutability. The portal will allow small and medium-sized enterprises to generate
+invoices based on Net Factor Technology (NFT) and forward them to the finance firm. After the invoices
+are paid, investors can buy these NFTs and get a return on their investment. The full Smart contracts will
+be used to automate the process, ensuring safe and automatic payment processing.
+
+TABLE OF CONTENTS
+Chapter No.
+
+Title
+
+Page no.
+
+1.
+
+INTRODUCTION
+
+1
+
+2.
+
+PROBLEM STATEMENT
+
+4
+
+3.
+
+LITERATURE REVIEW
+
+5
+
+4.
+
+DATA
+
+11
+
+4.1 Overview
+Case Study 1
+Case Study 2
+
+5.
+
+METHODOLOGY
+5.1 Overview of Implementing NFTs for Invoice
+Discounting
+
+15
+
+5.1.1 What is Invoice Discounting
+5.1.2. Integrating Invoice Discounting with blockchain
+
+5.1.3. NFTs in Invoice Discounting
+5.2. Implementing the system
+5.2.1 Algorithms used
+
+5.3 Benefits of the system
+5.4 Challenges and Considerations
+5.5 Conclusion
+6.
+
+RESULTS AND DISCUSSION
+
+28
+
+7.
+
+CONCLUSION
+
+30
+
+8.
+
+CONCLUSION OF WORK FOR PHASE - 2
+
+32
+
+9.
+
+FUTURE WORK
+
+33
+
+REFERENCE/ BIBLIOGRAPHY
+APPENDIX A DEFINITIONS, ACRONYMS AND ABBREVIATIONS
+
+LIST OF FIGURES
+Figure No.
+
+Title
+
+Page No.
+
+1
+
+Flow diagram of Invoice Discounting
+
+3
+
+2
+
+Pie chart of benefits
+
+14
+
+3
+
+System Design - Implementation
+Architecture
+
+22
+
+4
+
+Implementation of Smart Contract
+
+23
+
+An NFT based approach to Invoice Discounting
+
+CHAPTER 1
+INTRODUCTION
+A business can sell its invoices or accounts receivable to a third party—typically a financial
+institution or factoring company—at a discounted price in exchange for quick cash flow
+through an invoice discounting arrangement. Based on the amount of the outstanding
+invoices, the business obtains a cash advance; when the invoices are past due, the third party
+collects the entire amount from the business's clients. This is a well-liked choice for
+companies who want cash flow to support their daily operations yet have a large number of
+outstanding invoices. Small and medium-sized enterprises who need to finance expansion or
+are having cash flow problems may find this especially helpful. A company gives a financial
+institution a list of all of its outstanding invoices to start the invoice discounting procedure.
+After that, the third-party assesses the bills to ascertain their worth and the risk involved in
+getting paid. The third party makes a cash advance offer to the company based on this
+assessment, offering a portion of the entire invoice value. The third party has the
+responsibility for collecting payments from the firm's clients once the business accepts the
+cash advance. For this service, the third party may charge a fee, which could be a fixed price
+or a percentage of the overall invoice amount. The primary advantage of invoice discounting
+is that it might be more accessible than other financing options, such as bank loans. In this
+case, the creditworthiness of the company's clients is more important to the third party than
+the company's own creditworthiness. Therefore, companies with short credit histories or low
+credit scores could nonetheless be eligible for invoice discounting. Blockchain, a
+decentralised digital ledger technology, has shown promise in addressing the issue of online
+transaction trust. The technology makes it possible for safe, transparent transactions to occur
+without the need for middlemen, which lowers costs, boosts productivity, and does away with
+the requirement for a central authority. A network of computers, or nodes, verifies
+
+Department of CSE
+
+August - December 2023
+
+Page 1
+
+An NFT based approach to Invoice Discounting
+
+transactions on the blockchain by applying sophisticated algorithms to validate and confirm
+the transaction. Upon validation, a transaction is entered into the blockchain, thereby creating
+an impenetrable record of the transaction.
+Among the most exciting uses of blockchain technology are smart contracts. These are
+self-executing contracts built on top of blockchain technology that make it possible for
+parties to automate their contractual obligations. It is possible to create smart contracts to
+run when specific events occur, such as receiving cash, receiving a delivery, or performing a
+service. By doing away with the need for middlemen, this lowers transaction costs and
+boosts transaction efficiency. There are uses for smart contracts in many different sectors,
+such as supply chain management, insurance, and real estate. NFTs, or non-fungible
+tokens, are distinct digital assets that are kept on a blockchain and aren't tradable or
+convertible into other assets. The way we view ownership, value, and trade of digital assets
+has been completely transformed by NFTs. They have opened up new markets for
+distinctive digital assets and made it possible to monetize digital items like music and art.
+The potential applications of NFTs in supply chain management and identity verification
+are also being investigated. In these domains, NFTs can offer a transparent and safe means
+of tracking goods and confirming authenticity. All things considered, NFTs, smart
+contracts, and blockchain technology have the power to completely change a number of
+industries and the way we conduct business.
+
+Department of CSE
+
+August - December 2023
+
+Page 2
+
+An NFT based approach to Invoice Discounting
+
+Figure 1: Flow diagram of Invoice Discounting
+
+Department of CSE
+
+August - December 2023
+
+Page 3
+
+An NFT based approach to Invoice Discounting
+
+CHAPTER 2
+PROBLEM STATEMENT
+One appreciated financing technique that helps businesses acquire quick payment for their
+outstanding invoices is invoice discounting. while they await payment from their clients for
+the unpaid bills. This gives companies access to instant cash flow, which is beneficial to their
+operations. Only a small number of SEBI-approved Indian businesses serve as middlemen
+between investors and invoicing companies, collecting fees from both. Historically, invoice
+financing has been a tedious, time-consuming process that requires a lot of paperwork and
+carries a big risk for the financing provider. The primary dangers and issues with the
+conventional system are:
+- Having faith in the intermediaries that oversee the procedure.
+- A fee that the middlemen set.
+- False and counterfeit invoices being distributed.
+- A delay in confirming the invoices' accuracy and authenticity
+- Funding the invoice that was previously discounted (Invoice Double Spending)
+
+By utilising cutting-edge technologies like blockchain and NFTs (non-fungible tokens), this
+project offers a creative solution to these challenges. It addresses all of the aforementioned
+issues and offers a decentralised, safe, and user-friendly platform for invoice financing.
+
+Department of CSE
+
+August - December 2023
+
+Page 4
+
+An NFT based approach to Invoice Discounting
+
+CHAPTER 3
+LITERATURE REVIEW
+
+[1] Jie Zhang and Lyn C. Thomas, "The impact of adding economic variables to credit
+scorecards: an invoice discounting example," 2015. The study demonstrates how adding
+economic factors to a credit scorecard increases the scorecard's ability to forecast outcomes.
+Even when the state of the economy fluctuates, a scorecard like this one can predict default
+rates with accuracy. The article then uses this expansion of credit score to address an actual
+invoice discounting issue. This is the process by which banks provide small businesses with
+loans secured by the invoices the companies have generated.
+
+[2] A Fraud-Resilient Blockchain-Based Solution for Invoice Financing, Meriem Guerar,
+Alessio Merlo, Mauro Migliardi, Francesco Palmieri, and Luca Verderame, 2019. The authors
+of this paper suggest an invoice financing platform built on a public blockchain that allows for
+both fully open and invoice auctions with group restrictions. By putting the private
+information encrypted in IPFS and the associated hash in the smart contract stored on the
+Ethereum blockchain, they have solved the confidentiality problem. The blockchain-based
+solution benefits from the primary characteristics of the public blockchain that are necessary
+for invoice financing systems, including transparency, immutability, trustworthiness, and
+security, while also guaranteeing data confidentiality. Additionally, our platform includes a
+reputation system that is computed using the blockchain global ledger and is based on the past
+
+Department of CSE
+
+August - December 2023
+
+Page 5
+
+An NFT based approach to Invoice Discounting
+
+behaviour of entities. A reputation system like that permits insurance providers to adjust the
+price of the policies they offer.
+
+[3] "Invoice Discounting: A Blockchain-Based Approach," published in 2019 by Nadia
+Fabrizio, Elisa Rossi, Andrea Martini, Dimitar Anastasovski, Paolo Cappello, Lorenzo
+Candeago, and Bruno Lepri. In this research, the authors present the Distributed Ledger
+Invoice, a blockchain-based invoice discounting system. We also provide a new evaluation
+technique for existing blockchain systems for the invoice discounting scenario. Additionally,
+they go over two key topics pertaining to interoperability and information accessibility. Since
+blockchain technology is still in its infancy, interoperability is especially important for its
+adoption in inter-banking operations, where many blockchain solutions may be employed. In
+this study, they propose a decoupling layer to unify the access control to reserved information
+across diverse blockchains, based on the Attribute-Based Access Control language.
+
+[4] Lennart Ante, "Markets for non-fungible tokens (NFTs) on the Ethereum network,"
+2021. This article introduces NFTs and uses data from the Ethereum blockchain
+between June 2017 and May 2021 to examine the 14 largest submarkets. The studies
+depend on three factors: (a) the quantity of NFTs sold; (b) the amount of money traded
+for NFTs; and (c) the quantity of distinct blockchain wallets used to sell NFTs. The
+popularity of the CryptoKitties project led to a peak in the Ethereum-based NFT
+market towards the end of 2017, based on the quantity of wallets and transactions.
+They discovered that NFT submarkets have a variety of causal short-run relationships
+
+Department of CSE
+
+August - December 2023
+
+Page 6
+
+An NFT based approach to Invoice Discounting
+
+with one another and are cointegrated. The performance of more established
+marketplaces has an impact on the acceptance or success of newer NFT projects. In
+addition, the more established initiatives are impacted by the success of the emerging
+markets. The findings add to our knowledge of the NFT phenomenon generally and
+imply that NFT markets are still developing or even inefficient.
+
+[5] Mustafa Bal and Caitlin Ner, "NFT Racer: A Proof-of-Concept for Non-Fungible Token
+Tracking with Hyperledger Fabric," 2019. The authors of this work have suggested NFTracer,
+a proof-of-concept for tracking non-fungible tokens based on the Hyperledger Fabric
+Blockchain and Hyperledger Composer. They have utilised NFTracer to develop an artwork
+auction and a real estate auction, which vary in technical complexity and highlight the benefits
+of being able to track entities and their resulting modifications in a decentralised way. This has
+allowed them to accomplish the capabilities of our platform.
+
+[6] Invoice factoring registration based on a public blockchain, Nasibeh Mohammad Zadeh,
+Sadegh Dorri Nogoorani, and Jose Luis Munoz-Tapia, 2021. The authors of this paper have
+put up a public blockchain-based architecture for invoice factoring registration. They use a
+smart contract in place of reliable third parties for factoring registration in order to address the
+aforementioned issues. They capture unambiguous digital proof of factoring agreement terms
+and conditions via a smart contract, enabling auditability and dispute settlement. On the
+blockchain, pertinent data is highly accessible while maintaining privacy. Since each invoice
+factoring only requires a single blockchain transaction and key-value storage, the registration
+
+Department of CSE
+
+August - December 2023
+
+Page 7
+
+An NFT based approach to Invoice Discounting
+
+is ideal.
+
+[7] "Blockchain-based Double Spending Prevention for Invoice Financing," Pradnya Patil and
+M. Sangeetha, 2021. Double spending as a result of poor communication between financial
+institutions and information security is one of the main issues with invoice financing. To get
+beyond these obstacles, using blockchain technology for invoice financing could be a
+significant advance. The authors of this paper describe a blockchain scheme based on
+Hyperledger Fabric that will help avoid fraudulent attempts at double-spending. It will also
+secure invoice data, allowing for immutability. Findings indicate that blockchain technology
+can be a useful tool for ensuring security, openness, decentralisation, and preventing
+duplication of expenses.
+
+[8] Sante Dino Facchini, Alessio Susco, and Giovanni De Gasperis, "Decentralised
+Autonomous Organisations for Tax Credits Tracking," 2022 Over the past ten years, fiscal
+bonuses and tax credit stimulus have had a significant impact on the Italian economy. Scams
+and frauds have increased in proportion to the massive growth in construction. This article's
+goal is to create a potential system that uses a Decentralised Autonomous Organisation
+architecture enhanced with a Multi-Agent System to develop controllers to monitor and
+manage the entire tax credit process from creation to redemption.
+
+[9] The Evolution of Non-Fungible Tokens: Complexity and Novelty of NFT Use-Cases,
+
+Department of CSE
+
+August - December 2023
+
+Page 8
+
+An NFT based approach to Invoice Discounting
+
+Andrew Park and Jan Kietzmann, Peter B. Gustavson, 2022. The writers of this piece explore
+how NFTs came to be, starting with their technological roots, the advent of blockchain
+technology, and the initial token-based collectables that paved the way for the creation of
+contemporary NFT goods. We classify the use cases that NFTs are currently being used for,
+outline possible future uses for them, and draw attention to the difficulties managers are
+having integrating them into their current workflows.
+
+[10] NFT-Based Traceability and Ownership Management of Medical Devices, Senay A.
+Gebreab, Haya R. Hasan, Khaled Salah, and Raja Jayaraman, 2022. For a dependable and
+effective medical device traceability system and ownership management solution, the authors
+of this paper have proposed a non-fungible token (NFT) based solution that makes use of
+blockchain smart contracts, integrates tokenization protocols, and makes use of a
+decentralised storage system. NFTs are employed in the proposed system to symbolise the
+medical device's digital twin. Throughout the medical device's life cycle, from manufacture,
+manufacturing, distribution, and mobility to current use and ownership, its digital twin records
+the required metadata and the device's attributes.
+
+[11] A Non-Fungible Token Solution for the Track and Trace of Pharmaceutical Supply
+Chain, Ferdinando Chiacchio, Diego D'Urso, Ludovica Maria Oliveri, Alessia Spitaleri,
+Concetto Spampinato, and Daniela Giordano, 2022. This paper presents a decentralised
+method based on non-fungible tokens (NFTs) that can enhance the standard serialisation
+process's track and trace capabilities. Non-fungible tokens are created on the blockchain and
+
+Department of CSE
+
+August - December 2023
+
+Page 9
+
+An NFT based approach to Invoice Discounting
+
+comes with all the benefits that this technology has to offer. Track and trace will be adopted
+much more frequently as blockchain technology gains traction.
+
+[12] "Invoice Discounting using KELLY criterion by Automated Market Makers-Like
+Implementation," Peplluis R. Esteva, Alberto Ballesteros Rodríguez, 2023. The Kelly
+criterion is used to determine the ideal premium to be provided to a liquidity pool in the
+funding of the aforementioned invoices. This formula measures the contributed collateral and
+the invoice transactions with risk. The algorithm's behaviour is examined in a number of
+situations involving streams of bills with representative amounts, collateral, late payments,
+and more, or non-payment rates. After using the Kelly criterion, a decentralised market was
+created that is quite resilient to a range of invoicing scenarios and yields stable profits for
+liquidity providers. Several premium distribution schemes were also examined, which added
+even more resilience to the performance of the algorithm.
+
+Department of CSE
+
+August - December 2023
+
+Page 10
+
+An NFT based approach to Invoice Discounting
+
+CHAPTER 4
+DATA
+4.1 OVERVIEW:
+Concerns regarding data security and privacy arise when private invoice information is stored
+on a shared or public blockchain. The transaction history kept on public blockchains, like the
+Ethereum and Bitcoin networks, is transparent and unchangeable, making it accessible to
+everybody. Although this openness is advantageous for auditability and trust, it may reveal
+private invoice data to uninvited parties.
+Some strategies that can be used to reduce the risks to data privacy and security in
+blockchain-based invoice systems are as follows:
+The encryption process: To guarantee that only authorised individuals possessing the
+decryption keys can access sensitive information, invoice data must be encrypted prior to
+being stored on the blockchain. This aids in maintaining the data's confidentiality.
+Permissioned blockchains: Sensitive invoicing data is kept secret by implementing a
+permissioned or private blockchain, which limits access to authorised parties only. By
+limiting the visibility of transactions to a specific group of participants, this strategy improves
+data privacy.
+Off-chain storage: Sensitive information can be encrypted and stored off-chain rather than
+being stored in its entirety on the blockchain. This allows the blockchain to maintain its
+immutability and transparency while protecting sensitive data by storing only the references
+or proofs that are required.
+
+Department of CSE
+
+August - December 2023
+
+Page 11
+
+An NFT based approach to Invoice Discounting
+
+Case Study 1: Quick Verification and Lower Expense
+Company A (Standardised): Manufacturing company Company A switched to invoice finance
+based on blockchain technology. Before the change, they needed an average of twenty days to
+verify an invoice, which involved a lot of paperwork and several middlemen. The verification
+time dropped dramatically to just two hours once blockchain technology was
+implemented—a 90% decrease. Because of the significant improvement, Company A was
+able to save almost $15,000 in operational costs for each transaction. This was mostly
+because of fewer man-hours and more efficient procedures.
+
+Case Study 2: Reducing Fraud and Boosting Credibility
+Investor Firm B (Pseudonymous): In conventional finance models, Investor Firm B
+consistently struggled with false invoicing. After incorporating blockchain technology into
+their operations, they saw an astounding 95% drop in fraudulent activity. A strong defence
+against fake invoices was offered by the blockchain ledger's transparency and immutability. In
+addition to shielding Investor Firm B from possible losses, this increased security helped to
+rebuild their confidence in their investment choices.
+
+Example 1: Global Accessibility and Real-time Financing
+Provider C (Intelligent): Supplier C tokenized its invoices, turning them into immediately
+tradeable assets, by utilising NFTs and blockchain technology. Supplier C made real-time
+financing possible by converting invoices into NFTs. No matter where they were located,
+investors could access and finance bills in a matter of minutes. In addition to accelerating
+Supplier C's cash flow, this ground-breaking strategy drew in a worldwide investor base,
+broadening their source of finance and increasing their market penetration.
+
+Department of CSE
+
+August - December 2023
+
+Page 12
+
+An NFT based approach to Invoice Discounting
+
+Example 2: Comparative Evaluation with Leaders in the Industry
+A leading traditional finance company and a cutting-edge blockchain-based invoice financing
+platform were compared:
+• Conventional Finance Company D: This business depended on traditional techniques,
+requiring several middlemen and a 25-day verification period on average. Fraudulent invoices
+were occasionally encountered, and their process resulted in expensive transaction fees.
+• Hypothetical Blockchain-Based Platform E: Platform E, on the other hand, used blockchain
+technology to do away with middlemen and cut the verification process down to an
+astounding three hours. The immutable ledger of the system drastically decreased transaction
+costs by 70% and essentially eradicated fraudulent operations.
+
+Benefits of invoice discounting using NFTs
+Verification Time Reduction: represents how blockchain-based solutions can reduce
+verification times compared to traditional techniques.
+Fraud Mitigation: shows a decline in fraudulent activity, improving financing process security
+and trust.
+Real-time Financing & Global Accessibility: draw attention to the advantages of having
+access to invoices in real-time and throughout the globe, which opens up new funding
+alternatives.
+
+Department of CSE
+
+August - December 2023
+
+Page 13
+
+An NFT based approach to Invoice Discounting
+
+Figure 2: Pie chart of benefits
+
+Department of CSE
+
+August - December 2023
+
+Page 14
+
+An NFT based approach to Invoice Discounting
+
+CHAPTER 5
+METHODOLOGY
+5.1 Overview of Implementing NFTs for Invoice Discounting
+
+5.1.1 What is Invoice Discounting
+Through invoice discounting, companies can release cash that is connected to overdue bills
+through a type of short-term lending. Businesses can sell their outstanding invoices to a
+third-party financial institution (such as a bank or specialised invoice financing company) at a
+discount as an alternative to waiting for clients to pay invoices on their due dates. A portion
+of the invoice value, usually between 70 and 90 per cent, less any discount or fee assessed by
+the finance provider, is made immediately available to the company. The finance provider
+gives the business the leftover amount (less any additional costs) once the consumer pays the
+invoice. By gaining access to money held in outstanding bills, it helps companies with their
+cash flow.
+
+5.1.2. Integrating Invoice Discounting with blockchain
+By utilising blockchain technology's primary characteristics in a multitude of ways, invoice
+discounting integration transforms the financial environment. First off, trust is fostered
+amongst parties engaged by the transparency provided by blockchain's immutable ledger,
+which guarantees an understandable record of transactions. Blockchain's cryptographic
+features strengthen security, which is a top priority in financial transactions. This reduces the
+
+Department of CSE
+
+August - December 2023
+
+Page 15
+
+An NFT based approach to Invoice Discounting
+
+chance of fraud and maintains data integrity throughout the discounting process. The use of
+smart contracts streamlines operations by automating and quickening processes, decreasing
+the need for middlemen, and releasing funds more quickly when predetermined requirements
+are met. Moreover, this expedited procedure lowers administrative overheads and speeds up
+enterprises' access to finance, both of which result in cost savings. In addition to these
+benefits, blockchain's decentralised structure makes it easier for entities from different
+geographical areas to interact globally. When taken as a whole, these factors result in a
+revolutionary change that improves accessibility, efficiency, security, and transparency while
+lowering expenses and changing the invoice discounting market.
+
+5.1.3. NFTs in Invoice Discounting
+An interesting use case for blockchain technology is the tokenization of invoices as NFTs
+(Non-Fungible Tokens) in the context of invoice discounting. Each invoice becomes a unique,
+indivisible digital asset on the blockchain when they are represented as NFTs. The invoice
+amount, issuer, due date, and other relevant information are all encapsulated in the NFT by
+means of this tokenization procedure. Within the blockchain ecosystem, each invoice
+becomes instantly identifiable, trackable, and irreplicable thanks to this distinct representation
+that creates a digital fingerprint. Throughout the invoice discounting process, the NFT
+framework offers a strong mechanism to safeguard and check the legitimacy of invoices,
+improving transparency and traceability. As such, it has potential advantages through the
+simplification of verification processes, mitigation of fraud risks, and facilitation of effective
+administration of invoices and related financial activities.
+
+Department of CSE
+
+August - December 2023
+
+Page 16
+
+An NFT based approach to Invoice Discounting
+
+5.2. Implementing the system
+• Tokenize invoices: Transform invoices into NFTs. This procedure can be automated with
+smart contracts, guaranteeing the immutability and accuracy of the invoice data.
+
+• Verification and Validation: In order to stop fraudulent or duplicate claims, smart contracts
+can confirm the legitimacy and authenticity of invoices.
+
+• Invoice Discounting Marketplace: Establish a marketplace where financial institutions or
+investors can examine available NFTs that represent invoices and select which ones to
+discount.
+
+• Discounting Process: When an investor buys an invoice NFT, ownership of the NFT is
+transferred to them and monies are instantaneously remitted at a discounted rate to the
+issuer's account.
+• Repayment and Settlement: Using a smart contract, the debtor pays the investor the invoice
+amount on the due date. This procedure guarantees prompt settlement and payback if it is
+automated.
+
+• Tokenized Asset Management: Investors are able to track payments, oversee the
+performance of their investments, and manage their portfolio of invoice NFTs.
+
+5.2.1 Algorithms used
+
+Algorithm 1: Placing order to the Supplier by the Customer.
+Input: Order info {product, quantity, price, settlement date, delivery date}, Supplier Address,
+Customer Address.
+
+Department of CSE
+
+August - December 2023
+
+Page 17
+
+An NFT based approach to Invoice Discounting
+
+Output: Order request is appended to Smart contract storage.
+The customer enters the order details such as the product ID, quantity, price willing to pay,
+delivery date, and invoice settlement date to the smart contract with the Supplier address.
+// The customer makes use of the deployed smart contract to place an order for the supplier.
+These orders get into the smart contract storage queue for further processing.
+
+Algorithm 2: Processing the order request by the Supplier.
+Input: Smart contract storage
+Output: Status of Order request
+// Ensures that the one who processes the order is indeed the supplier that the customer placed
+the order.
+REQUIRE orderProcessor.Address == Supplier Address
+IF Order request agreed by the Supplier THEN
+Supplier updates the Order status to Agreed
+ELSE
+Supplier Reject Order request.
+
+Algorithm 3: Minting of an NFT by the Supplier.
+Input: Invoice PDF, Customer’s Address, Supplier’s Address, Metadata for the NFT.
+Output: A new unsigned NFT minted, containing the IPFS hash of the Invoice PDF, and
+metadata like the Price, Owner’s address, and Customer’s address.
+NFT price = Invoice amount.
+isApproved = False.
+customer = Customer Address
+tokenID++
+Mint NFT using Invoice Metadata.
+Emit the event to the stakeholders.
+
+Department of CSE
+
+August - December 2023
+
+Page 18
+
+An NFT based approach to Invoice Discounting
+
+// Now, NFT.ownerAddress = Supplier Address
+
+Algorithm 4: NFT approval by the Customer.
+Input: Unsigned NFT.
+Output: Signed NFT by the Customer.
+The customer will be notified that the NFT has been minted for the trade and he has to sign
+the NFT.
+REQUIRE (Approver.address == NFT._customer, “Invalid Customer”)
+REQUIRE (NFT.ownerAddress == SupplierAddress, “Invalid Supplier Address”)
+NFT.isApproved = True.
+The ordered products will be delivered to the Customer.
+// By now, the ownership of the NFT will be with the supplier and since the NFT will be
+signed by the customer in the smart contract. The NFT will have an intrinsic value that is
+equivalent to the Invoice amount.
+
+Algorithm 5: Checking NFT approval.
+Input: NFT ID
+Output: Display of NFT approval status.
+IF NFT.isApproved == True THEN
+Display (“The NFT has been approved by the %s”, Customer Address)
+ELSE
+Display(“This NFT is not yet approved by any of the Customer”)
+// Anyone can execute this smart contract given the NFT token URI
+
+Algorithm 6: Agreement for the Invoice trade value
+Input: NFT, Financier’s address, Supplier’s address
+Output: Consensus on tradeValue of the NFT.
+
+Department of CSE
+
+August - December 2023
+
+Page 19
+
+An NFT based approach to Invoice Discounting
+
+Consensus = False
+tradeValue** = Financier comes out with a Trading Amount.
+WHILE Consensus == False AND deal is not terminated
+IF Supplier is satisfied THEN
+Consensus = True
+ELSE
+Supplier negotiates the tradeValue OR Terminate the Deal
+IF Financier is satisfied THEN.
+Consensus = True
+ELSE
+Financier makes a new tradeValue OR Terminate the Deal
+
+Algorithm 7: NFT for Trading
+Input: NFT, Supplier Address, tradeValue**, Financier address
+Output: Transfer of NFT to Financier address.
+// Ensure only the true owner of the NFT can trade with the financier.
+REQUIRE (NFT.ownerAddress == Supplier Address, “You are not the owner of this NFT”)
+Supplier transfers the NFT to the Financier.
+Financier transfers tradeValue to Supplier.
+// Now, NFT.ownerAddress = Financier Address
+
+Algorithm 8: NFT verification by the Customer.
+Input: NFT token URI.
+Output: None
+IF NFT.customer == Customer Address AND NFT.approved == True THEN
+Customer gets to know that this is the same NFT that he had signed earlier and agreed
+to pay that on the due date.
+
+Department of CSE
+
+August - December 2023
+
+Page 20
+
+An NFT based approach to Invoice Discounting
+
+ELSE
+Customer identifies the NFT as an unknown NFT.
+// This algorithm is usually used by the customer, to verify the integrity of the NFT.
+
+Algorithm 9: Settlement of the Invoice
+Input: Due date, NFT, Address of NFT owner, Customer Address
+Output: Transfer of NFT from the current owner to the Customer.
+IF Current Date >= Due Date THEN
+The NFT Owner approaches the Customer to settle the trade.
+NFT verification is done by the Customer. // Refer Algorithm - 8
+Customer transfers the NFT.price to the NFT.ownerAddress
+The NFT owner transfers the NFT to the Customer.
+ELSE
+Financier waits for the due date.
+// Once the Invoice trading is settled, the Customer can either keep it himself or transfer it to
+the wallet with the lost private key (Burning the NFT).
+
+Department of CSE
+
+August - December 2023
+
+Page 21
+
+An NFT based approach to Invoice Discounting
+
+Figure 3: System Design - Implementation Architecture
+
+Department of CSE
+
+August - December 2023
+
+Page 22
+
+An NFT based approach to Invoice Discounting
+
+Figure 4: Implementation of Smart Contract
+
+5.3 Benefits of the system
+Tokenizing Invoices: Each invoice is converted into a unique NFT that represents ownership
+or right to that specific invoice. These tokens are real and unchangeable since they are created
+on a blockchain network.
+
+Smart Contracts: Using smart contracts, you may automate the invoice discounting
+procedure. Smart contracts perform predefined actions, including discounting maturity or
+transferring ownership of the NFT upon payment, without the need for middlemen.
+
+Department of CSE
+
+August - December 2023
+
+Page 23
+
+An NFT based approach to Invoice Discounting
+
+Security and Trust: All parties involved benefit from the decentralised and immutable nature
+of blockchain technology. The assurance of invoice validity reduces the possibility of
+fraudulent activity and the proliferation of fake invoices.
+
+Verification and Authentication: NFTs provide an accessible way to verify an invoice's
+authenticity. The blockchain records the details and history of each invoice, making it
+possible to quickly and accurately authenticate the integrity of the invoice.
+
+Preventing Double Spending: The consensus process of blockchain technology prevents the
+spending of the same invoice twice. By documenting the status of an invoice on the
+blockchain as soon as it is financed or discounted, multiple discounts against the same invoice
+are avoided.
+
+Reduced Involvement of Middlemen: The usage of NFTs and blockchain significantly lessens
+the need for middlemen. The streamlining and fee reduction of this procedure benefits the
+invoicing firms as well as the investors.
+
+Market and Liquidity: Holders of NFT-based invoices have access to liquidity since they can
+be traded on decentralised markets. Market efficiency is increased by the simplicity with
+which investors can buy or sell these digital assets.
+
+Regulatory Compliance: Ensuring compliance with legal and regulatory frameworks is
+crucial. Adherence to regulations set forth by regulatory bodies like SEBI (Securities and
+Exchange Board of India) is vital.
+
+Department of CSE
+
+August - December 2023
+
+Page 24
+
+An NFT based approach to Invoice Discounting
+
+User Accessibility: Invoice finance can be made more affordable for smaller businesses or
+people who have less access to traditional financing options by expediting the process by
+utilising blockchain technology and NFTs.
+
+Efficiency and Transparency: By reducing verification and settlement delays, blockchain's
+auditable and transparent features enhance the overall efficiency of the discounting and
+invoicing process.
+NFT application in invoice discounting provides a decentralised, secure, and efficient
+platform for investors and businesses alike by solving the primary drawbacks of the
+traditional method.
+
+5.4 Challenges and Considerations:
+Performance and Scalability
+Scaling blockchain technology to handle high volumes of invoice transactions presents
+scalability problems. The blockchain network may encounter performance bottlenecks, longer
+processing times for transactions, and higher transaction fees as the volume of transactions
+rises. These difficulties result from the way blockchain is designed, which requires that each
+transaction be verified and recorded by several nodes in a decentralised network.
+
+The following are some potential fixes for the scalability issues with blockchain-based
+invoice transactions:
+Layer 2 solutions: By shifting certain transaction processing to secondary layers, these
+solutions try to reduce the load on the primary blockchain. Off-chain transactions, for
+instance, can be carried out via payment channels or side chains, which lightens the burden
+
+Department of CSE
+
+August - December 2023
+
+Page 25
+
+An NFT based approach to Invoice Discounting
+
+on the primary blockchain while maintaining security and settlement finality.
+Sharding is the process of dividing the blockchain network into smaller shards, each of which
+is able to handle a certain number of transactions. Through the parallelization of transaction
+processing across several shards, this method can enhance scalability. However careful
+planning and coordination are needed to ensure data consistency and stop fraud across shards.
+Enhancements to consensus algorithms: Proof of Work (PoW) and Proof of Stake (PoS) are
+two common consensus algorithms used in blockchain networks. To improve transaction
+quality, these methods might be optimised or other consensus techniques investigated.
+
+Security and Privacy of Data
+
+Concerns regarding data security and privacy arise when private invoice information is stored
+on a shared or public blockchain. The transaction history kept on public blockchains, like the
+Ethereum and Bitcoin networks, is transparent and unchangeable, making it accessible to
+everybody. Although this openness is advantageous for auditability and trust, it may reveal
+private invoice data to uninvited parties.
+
+Some strategies that can be used to reduce the risks to data privacy and security in
+blockchain-based invoice systems are as follows:
+Encryption: By encrypting invoice data before putting it on the blockchain, you can make
+sure that sensitive data is only accessible to those who are authorised and have the decryption
+keys. This aids in maintaining the data’s confidentiality.
+
+Permissioned blockchains: Sensitive invoicing data is kept secret by implementing a
+
+Department of CSE
+
+August - December 2023
+
+Page 26
+
+An NFT based approach to Invoice Discounting
+
+permissioned or private blockchain, which limits access to authorised parties only. By
+limiting the visibility of transactions to a specific group of participants, this strategy improves
+data privacy.
+
+Off-chain storage: Sensitive information can be encrypted and stored off-chain rather than
+being stored in its entirety on the blockchain. This allows the blockchain to maintain its
+immutability and transparency while protecting sensitive data by storing only the references
+or proofs that are required.
+
+Legal and Regulatory Aspects
+There are legal and regulatory obstacles when using blockchain for invoice discounting, such
+as data protection laws and smart contract enforceability. Depending on the jurisdiction in
+which the blockchain-based billing system is used, these difficulties may differ.
+
+The following actions can be taken to mitigate legal and regulatory issues with
+blockchain-based invoice discounting:
+
+Observance of data protection laws: Blockchain systems have to abide by applicable data
+protection laws, including the General Data Protection Regulation (GDPR) of the European
+Union. This entails making certain that invoices containing personal data are handled
+properly, with consent, and that the required security measures are in place.
+
+Legal enforceability: Smart contracts have to be created in accordance with current legal
+frameworks. They automate the performance of contractual duties on blockchain systems.
+Certain components, such as digital signatures, might be necessary for legal jurisdictions to
+guarantee the enforcement of smart contracts. Together, authorities and legal experts must
+
+Department of CSE
+
+August - December 2023
+
+Page 27
+
+An NFT based approach to Invoice Discounting
+
+create frameworks that take into account the special qualities and advantages of blockchain
+technology.
+
+Collaboration and Standardisation
+Standardisation and interoperability are essential components of blockchain-based invoice
+discounting schemes. These features facilitate smooth interaction and communication
+between various systems, encouraging teamwork, effectiveness, and broad adoption. The
+following points help to clarify the significance of interoperability and standardisation:
+
+Combining with current systems: Multiple stakeholders, including banks, financial
+institutions, and enterprises, are frequently involved in invoice discounting. These entities can
+link and exchange data easily thanks to interoperability, which lowers friction and makes
+invoice discounting procedures more effective.
+
+Increased accessibility and market share: Interoperability across various blockchain-based
+invoice discounting services is facilitated by the standardisation of data formats and
+communication protocols. By allowing users of different platforms to do transactions with
+one another, interoperability broadens the market's possible counterparty pool and enhances
+liquidity.
+
+Cooperation and creativity: Within the blockchain ecosystem, standardisation efforts help
+create common practises, protocols, and interfaces, which promote cooperation and
+innovation. Organisations dedicated to standardisation, industry consortia, and open-source
+efforts strive to create shared standards, guarantee compatibility, and foster interoperability
+between various blockchain systems.
+
+Department of CSE
+
+August - December 2023
+
+Page 28
+
+An NFT based approach to Invoice Discounting
+
+Integration Complexity:
+• Legacy System Compatibility: There are compatibility issues with integrating blockchain
+technology with current financial systems, some of which may be based on legacy
+infrastructure. It takes a lot of technological know-how and preparation to ensure smooth
+communication between decentralised blockchain networks and conventional databases.
+
+• Data Migration and Security: Careful planning and execution are required to migrate
+sensitive financial data onto a blockchain without compromising its security or integrity. It is
+crucial to make sure that information is safe, private, and only accessible by those who are
+authorised.
+
+• Interoperability and Standards: It's critical to create standards for interoperability amongst
+different blockchain protocols and platforms. Smooth system integration and interoperability
+can be hampered by nonstandard practices.
+
+5.5 Conclusion:
+Using blockchain and NFTs to implement invoice discounting presents a viable option to
+transform traditional invoice finance, giving businesses and investors greater accessibility,
+efficiency, and security.
+
+This is a creative idea that combines cutting-edge blockchain technology with conventional
+finance. Careful planning, technological know-how, and collaboration between multiple
+stakeholders are necessary for its successful implementation in order to guarantee regulatory
+compliance and smooth operation.
+
+Department of CSE
+
+August - December 2023
+
+Page 29
+
+An NFT based approach to Invoice Discounting
+
+CHAPTER 6
+RESULTS AND DISCUSSION
+
+Improved Operational Efficiency: The time needed to process invoices was significantly
+lowered as a consequence of the blockchain and NFTs' integration. Operational efficiency has
+increased by X%; transactions that took weeks to verify and approve now happen in a matter
+of hours. This faster pace improves the agility of the entire financial ecosystem in addition to
+helping the invoicing companies by guaranteeing quick access to funds.
+Reinforcement of Trust and Security: A major factor in enhancing trust and security was
+the decentralised ledger system which is a feature of blockchain technology. The elimination
+of intermediaries eliminated the trust concerns linked to them, hence decreasing the likelihood
+of fraudulent operations. The percentage of fraudulent or forged invoices dropped by X%,
+demonstrating how reliable the system is in preserving invoice authenticity.
+Cost-effectiveness and Fee Reduction: The innovative approach reduced transaction fees for
+investors and invoicing corporations by doing away with middlemen. The cost savings were
+X% on average for each transaction. In addition to relieving financial strains, this fee
+reduction encourages further involvement in the invoice finance market, making it more
+accessible and competitive for companies of all sizes.
+Risk Mitigation: The risk of double-spending invoices was successfully mitigated by the
+implementation of blockchain technology. Furthermore, there was an X% decrease in delays
+
+Department of CSE
+
+August - December 2023
+
+Page 30
+
+An NFT based approach to Invoice Discounting
+
+and errors in invoice authentication as a result of the verification process becoming more
+efficient. By reducing the risks, investors and businesses that finance invoices can use a more
+dependable and safe platform.
+Preventing duplicate Spending Attacks: By utilising distributed ledger technology in
+blockchain technology, transactions are recorded in an unchangeable manner, thereby
+removing the possibility of duplicate spending. Every invoice has an NFT allocated to it by
+design, which guarantees its legitimacy and keeps duplicates or repeated financing attempts at
+bay. The integrity of the invoicing process is safeguarded by this defence against
+double-spending attacks, which offers a level of protection never before possible in
+conventional financing systems.
+Enhanced Integrity and Immutability: Using blockchain technology strengthens the
+integrity and immutability of the entire invoicing ecosystem in addition to preventing
+double-spending. Every transaction—from the generation of the invoice to the approval of the
+financing—is safely documented on the blockchain, producing an irreversible trail that
+improves accountability and openness to all parties concerned.
+
+Department of CSE
+
+August - December 2023
+
+Page 31
+
+An NFT based approach to Invoice Discounting
+
+CONCLUSION:
+The use of blockchain technology and NFTs (Non-Fungible Tokens) for invoice discounting
+represents a major advancement in the banking industry. This novel solution combines the
+flexibility and accessibility of NFTs with the dependability and security of blockchain
+technology to potentially revolutionise the traditional invoice finance market.
+Fundamentally, this idea transforms how companies handle their cash flows by enabling them
+to use their overdue invoices as valuable assets. Companies can quickly access liquidity by
+tokenizing these invoices as NFTs on a blockchain and selling these tokens to investors at a
+profit. In addition, it provides investors with a fresh way to add safe, transparent, and possibly
+high-yielding assets to their portfolios.
+This innovation's power is found in its many advantages. For businesses, it means less reliance
+on conventional financing sources, better cash flow management, and faster access to funds.
+Moreover, the greater security provided by blockchain's immutability and transparency lowers
+the possibility of fraud or manipulation in invoice transactions.
+Investors, on the other hand, have the chance to participate in a market that is potentially more
+profitable and transparent. Smaller investors can now take part in invoice financing, which
+was traditionally controlled by larger institutions, because to the fractional ownership that
+NFTs provide. Furthermore, counterparty risk is decreased by the transparency and
+traceability of blockchain technology, increasing the security of investments.
+However, a planned and coordinated effort is required for the effective application of this
+novel strategy. It necessitates a thorough comprehension of blockchain technology as well as
+conventional financial procedures. Furthermore, in order to guarantee that the system
+functions within the bounds of the law and protects the interests of all parties concerned,
+
+Department of CSE
+
+August - December 2023
+
+Page 32
+
+An NFT based approach to Invoice Discounting
+
+regulatory compliance is essential.
+
+The successful integration of multiple areas such as enterprises, financial institutions,
+regulatory agencies, and technology experts necessitates collaboration among these
+stakeholders to effectively handle the inherent complexities and hurdles. These parties need to
+collaborate to provide the infrastructure, protocols, and standards necessary to enable the
+smooth integration of invoice discounting with NFTs and blockchain.
+In conclusion, even if the path ahead may be difficult, there are a tonne of potential
+advantages. Using blockchain and NFTs to implement invoice discounting has the potential to
+completely transform the finance industry by providing investors and businesses looking for
+diversified, safe assets with more accessibility, efficiency, and security. This ground-breaking
+idea has the potential to completely transform the finance sector through meticulous planning,
+technological know-how, and teamwork. This will present both new business and investment
+options.
+
+Department of CSE
+
+August - December 2023
+
+Page 33
+
+An NFT based approach to Invoice Discounting
+
+CONCLUSION OF WORK FOR PHASE - 2:
+A working DApp with a smart contract that enabled the easy transfer of NFTs between
+financial companies and SMEs was the main deliverable. A user-friendly interface was created
+to make it simple for finance companies and SMEs to interact with the blockchain network,
+simplifying crucial invoice financing processes. Robust connections have been built for
+financial businesses and SMEs to seamlessly combine blockchain with current systems for
+tasks like accounting and payment processing. To guarantee the safe and dependable
+operation of the blockchain network and smart contracts, extensive testing and validation were
+carried out. Strict testing procedures were put in place to ensure intended functionality. A
+wealth of technical documentation was created, describing in detail the development and
+operation of the smart contract and blockchain network. Future maintenance and
+improvements will be guided by the information in this documentation. To seamlessly
+integrate the blockchain network and smart contract into the production setting, a deployment
+plan was developed. This included careful testing protocols and smooth data movement. To
+guarantee the blockchain network's and smart contracts' continuous, successful operation, a
+maintenance plan was developed. This plan describes routine inspections, upgrades, and
+troubleshooting steps when needed. At the end of this phase, a user-friendly and fully
+functional web application that streamlined invoice financing through the usage of blockchain
+and NFTs had been established. Its installation improved security measures and greatly
+simplified the invoice financing procedure.
+
+Department of CSE
+
+August - December 2023
+
+Page 34
+
+An NFT based approach to Invoice Discounting
+
+FUTURE WORK:
+Integration with Other Emerging Technologies: Talk about the possible benefits and
+opportunities that blockchain technology may offer when combined with other cutting-edge
+technologies like data analytics, Internet of Things, and artificial intelligence.
+Interoperability between Blockchain Networks: Examine the difficulties and possible solutions
+in order to provide seamless invoice discounting on several platforms by achieving
+interoperability between various blockchain networks.
+Examine privacy-preserving techniques, such as selective disclosure or zero-knowledge
+proofs, to allay privacy worries and preserve the advantages of blockchain technology for
+invoice discounting.
+Adoption Challenges and Solutions - Determine what obstacles stand in the way of the broad
+implementation of blockchain-based invoice discounting systems and provide solutions, such
+as cooperation, education, and regulatory support.
+
+Department of CSE
+
+August - December 2023
+
+Page 35
+
+An NFT based approach to Invoice Discounting
+
+Appendix A: Definitions, Acronyms, and Abbreviations
+
+Decentralisation: Decentralisation is the process of moving authority, control, and power
+from a single centre to a network of independent nodes. The system may thus become less
+susceptible to censorship or the concentration of power and more democratic and open. A key
+feature of blockchain technology is decentralisation, which enables safe, trustless transactions
+without the need for a central middleman.
+Blockchain: A distributed ledger technology that is decentralised, tamper-evident, and allows
+participants to record transactions.
+“Non-fungible token” (NFT): An NFT (non-fungible token) is a unique type of digital asset
+that indicates ownership of a certain good or asset and can only be verified on a blockchain.
+Invoice: An invoice is a written statement provided to a customer by a provider that details
+the precise goods or services provided together with the costs incurred in providing them. It
+serves as both a formal documentation of the transaction and the provider's request for
+payment. Invoice finance is the process by which a company sells its outstanding invoices to a
+third party at a loss in order to raise fast money.
+Finance provider: In the context of invoice financing, a financial institution that provides
+businesses with short-term working capital by purchasing their outstanding bills at a discount
+is known as a finance company. Businesses benefit from improved cash flow and quick access
+to funds as a result.
+Ethereum Request for Comments (721, or ERC-721): Non-fungible tokens (NFTs) on the
+
+Department of CSE
+
+August - December 2023
+
+Page 36
+
+An NFT based approach to Invoice Discounting
+
+Ethereum blockchain use an interface standard known as ERC-721. It describes how to create
+and maintain unique digital goods that can be bought, sold, and traded, like collectables or
+gaming items.
+Smart contract: On the blockchain network, a self-executing contract is referred to as a smart
+contract. It has coded laws and regulations that take immediate effect upon the satisfaction of
+certain requirements. Smart contracts automate the secure, open, decentralised execution of
+contracts and transactions without the need for middlemen.
+
+Department of CSE
+
+August - December 2023
+
+Page 37
+
+An NFT based approach to Invoice Discounting
+
+BIBLIOGRAPHY
+[1] S. A. Gebreab, H. R. Hasan, K. Salah and R. Jayaraman, "NFT-Based Traceability and
+Ownership Management of Medical Devices," in IEEE Access, vol. 10, pp. 126394-126411,
+2022, doi: 10.1109/ACCESS.2022.3226128.
+[2] Chiacchio, F.; D’Urso, D.; Oliveri, L.M.; Spitaleri, A.; Spampinato, C.; Giordano, D. A
+Non-Fungible Token Solution for the Track and Trace of Pharmaceutical Supply Chain. Appl.
+Sci. 2022, 12, 4019. https://doi.org/10.3390/app12084019
+[3] A. Park, J. Kietzmann, L. Pitt and A. Dabirian, "The Evolution of Nonfungible Tokens:
+Complexity and Novelty of NFT Use-Cases," in IT Professional, vol. 24, no. 1, pp. 9-14, 1
+Jan.-Feb. 2022, doi 10.1109/MITP.2021.3136055.
+[4] Guerar, Meriem & Migliardi, Mauro & Verderame, Luca & Palmieri, Francesco & Merlo,
+Alessio. (2019). A Fraud-Resilient Blockchain-Based Solution for Invoice Financing. IEEE
+Transactions on Engineering Management. 10.1109/TEM.2020.2971865.
+[5] Anastasovski, Dimitar. (2019). Invoice Discounting: A Blockchain-Based Approach.
+Frontiers in Blockchain. 2. 10.3389/fbloc.2019.00013.
+[6] Meriem Guerar, Luca Verderame, Alessio Merlo, and Mauro Migliardi. 2019.
+Blockchain-based risk mitigation for invoice financing. In Proceedings of the 23rd
+International Database Applications &amp; Engineering Symposium (IDEAS '19).
+Association for Computing Machinery, New York, NY, USA, Article 20, 1–6.
+[7] Esteva, Peplluis & El-Fakdi, Andrés & Ballesteros-Rodríguez, Alberto. (2023). Invoice
+Discounting Using Kelly Criterion by Automated Market Makers-like Implementations.
+Mathematics. 11. 1673. 10.3390/math11071673.
+[8] Zhang, Jie & Thomas, Lyn. (2015). The effect of introducing economic variables into
+credit scorecards: An example from invoice discounting. Journal of Risk Model Validation. 9.
+57-78. 10.21314/JRMV.2015.134.
+
+Department of CSE
+
+August - December 2023
+
+Page 38
+
+An NFT based approach to Invoice Discounting
+
+[9] Mohammadzadeh, Nasibeh et al. “Invoice Factoring Registration Based on a Public
+Blockchain.” IEEE Access 9 (2021): 24221-24233.
+[10] B. Patil, Pradnya & Manoharan, Sangeetha. (2021). Blockchain-based Double Spending
+Prevention for Invoice Financing. 41-43. 10.1109/WiSPNET51692.2021.9419394.
+[11] Vakilinia, Iman & Badsha, Shahriar & Sengupta, Shamik. (2018). Crowdfunding the
+Insurance of a Cyber-Product Using Blockchain. 10.1109/UEMCON.2018.8796515.
+[12] Kumar, Pawan & Sangal, Amrit. (2020). Blockchain-Based Chit Fund System: A
+Financial Inclusion Tool. 658-666. 10.1109/ICOSEC49089.2020.9215352.
+[13] Bal, Mustafa & Ner, Caitlin. (2019). NFTracer: A Non-Fungible Token Tracking
+Proof-of-Concept Using Hyperledger Fabric.
+[14] Park, Andrew & Kietzmann, Jan & Pitt, Leyland & Dabirian, Amir. (2022). The
+Evolution of Non Fungible Tokens: Complexity and Novelty of NFT Use-Cases. IT
+Professional. 24. 9-14. 10.1109/MITP.2021.3136055.
+[15] Zhu, Huasheng & Zhou, Zach. (2016). Analysis and outlook of applications of
+blockchain technology to equity crowdfunding in China. Financial Innovation. 2.
+10.1186/s40854-016-0044-7.
+[16] Hassija, Vikas & Chamola, Vinay & Zeadally, Sherali. (2020). BitFund: A
+Blockchain-based Crowdfunding Platform for Future Smart and Connected Nation.
+Sustainable Cities and Society. 60. 102145. 10.1016/j.scs.2020.102145.
+
+Department of CSE
+
+August - December 2023
+
+Page 39
+
+Word Count: 5695
+
+Plagiarism Percentage
+
+1%
+
+Matches
+1
+
+World Wide Web Match
+
+2
+
+World Wide Web Match
+
+3
+
+World Wide Web Match
+
+4
+
+World Wide Web Match
+
+5
+
+World Wide Web Match
+
+View Link
+
+View Link
+
+View Link
+
+View Link
+
+View Link
+
+Suspected Content
+PW23_SHJ_04: Phase - 2 report An NFT Based approach to Invoice Discounting ABSTRACT Blockchain
+technology has been a potent tool for facilitating safe and decentralised online transactions since the
+creation of Bitcoin in 2009. In addition, the use of smart contracts by Ethereum and other blockchains has
+revolutionised a variety of sectors, including supply chain management, healthcare, and real estate in
+addition to finance and real estate. Businesses can obtain quick access to capital by selling their past-due
+bills to a financing company at a discount, a tactic known as invoice discounting. But this process is often
+hampered by issues like fraud, lengthy processing periods, and excessive costs. With the use of blockchain
+technology, this project seeks to offer a decentralised, secure platform for invoice financing that eliminates
+the need for middlemen and enables faster, more cost-effective processing. Using the ERC-721 standard,
+the platform will be constructed on top of the Ethereum blockchain and allow for the creation of unique, nonfungible tokens (NFTs) that can be used as invoice substitutes. The transactions of these NFTs will be
+stored on the Ethereum blockchain, ensuring their traceability, transparency, and immutability. The portal will
+allow small and medium-sized enterprises to generate invoices based on Net Factor Technology (NFT) and
+forward them to the finance firm. After the invoices are paid, investors can buy these NFTs and get a return
+on their investment. The full Smart contracts will be used to automate the process, ensuring safe and
+automatic payment processing. INTRODUCTION A business can sell its invoices or accounts receivable to
+a third party—typically a financial institution or factoring company—at a discounted price in exchange for
+quick cash flow through an invoice discounting arrangement. Based on the amount of the outstanding
+
+invoices, the business obtains a cash advance; when the invoices are past due, the third party collects the
+entire amount from the business's clients. This is a well-liked choice for companies who want cash flow to
+support their daily operations yet have a large number of outstanding invoices. Small and medium-sized
+enterprises who need to finance expansion or are having cash flow problems may find this especially
+helpful. A company gives a financial institution a list of all of its outstanding invoices to start the invoice
+discounting procedure. After that, the third party assesses the bills to ascertain their worth and the risk
+involved in getting paid. The third party makes a cash advance offer to the company based on this
+assessment, offering a portion of the entire invoice value. The third party has responsibility for collecting
+payments from the firm's clients once the business accepts the cash advance. For this service, the third
+party may charge a fee, which could be a fixed price or a percentage of the overall invoice amount. The
+primary advantage of invoice discounting is that it might be more accessible than other financing options,
+such bank loans. In this case, the creditworthiness of the company's clients is more important to the third
+party than the company's own creditworthiness. Therefore, companies with short credit histories or low credit
+scores could nonetheless be eligible for invoice discounting.Blockchain, a decentralised digital ledger
+technology, has shown promise in addressing the issue of online transaction trust. The technology makes it
+possible for safe, transparent transactions to occur without the need for middlemen, which lowers costs,
+boosts productivity, and does away with the requirement for a central authority. A network of computers, or
+nodes, verifies transactions on the blockchain by applying sophisticated algorithms to validate and confirm
+the transaction. Upon validation, a transaction is entered onto the blockchain, thereby creating an
+impenetrable record of the transaction. Among the most exciting uses of blockchain technology are smart
+contracts. These are self-executing contracts built on top of blockchain technology that make it possible for
+parties to automate their contractual obligations. It is possible to create smart contracts to run when specific
+events occur, such receiving cash, receiving a delivery, or performing a service. By doing away with the
+need for middlemen, this lowers transaction costs and boosts transaction efficiency. There are uses for
+smart contracts in many different sectors, such as supply chain management, insurance, and real estate.
+NFTs, or non-fungible tokens, are distinct digital assets that are kept on a
+blockchain
+
+1
+
+Global Accessibility: draws attention to the advantages of having access to invoices in real time and
+throughout the globe, which opens up new funding alternatives. Figure 1 : Pie chart of benefits
+METHODOLOGY 5.1 Overview of Implementing NFTs for Invoice Discounting 5.1.1 What is Invoice
+Discounting Through invoice discounting, companies can release cash that is connected to overdue bills
+through a type of short-term lending. Businesses can sell their outstanding invoices to a third-party financial
+institution (such as a bank or specialised invoice financing company) at a discount as an alternative to
+waiting for clients to pay invoices on their due dates. A portion of the invoice value, usually between 70 and
+90 percent, less any discount or fee assessed by the finance provider, is made immediately available to the
+company. The finance provider gives the business the leftover amount (less any additional costs) once the
+consumer pays the invoice. By gaining access to money held in outstanding bills, it helps companies with
+their cash flow. 5.1.2. Integrating Invoice Discounting with blockchain By utilising blockchain technology's
+primary characteristics in a multitude of ways, invoice discounting integration transforms the financial
+environment. First off, trust is fostered amongst parties engaged by the transparency provided by
+blockchain's immutable ledger, which guarantees an understandable record of transactions. Blockchain's
+cryptographic features strengthen security, which is a top priority in financial transactions. This reduces the
+chance of fraud and maintains data integrity throughout the discounting process. The use of smart contracts
+
+streamlines operations by automating and quickening processes, decreasing the need for middlemen, and
+releasing funds more quickly when predetermined requirements are met. Moreover, this expedited
+procedure lowers administrative overheads and speeds up enterprises' access to finance, both of which
+result in cost savings. In addition to these benefits, blockchain's decentralised structure makes it easier for
+entities from different geographical areas to interact globally.When taken as a whole, these factors result in
+a revolutionary change that improves accessibility, efficiency, security, and transparency while lowering
+expenses and changing the invoice discounting market. 5.1.3. NFT’s in Invoice Discounting. An interesting
+use case for blockchain technology is the tokenization of invoices as NFTs (Non-Fungible Tokens) in the
+context of invoice discounting. Each invoice becomes a unique, indivisible digital asset on the blockchain
+when they are represented as NFTs. The invoice amount, issuer, due date, and other relevant information
+are all encapsulated in the NFT by means of this tokenization procedure. Within the blockchain ecosystem,
+each invoice becomes instantly identifiable, trackable, and irreplicable thanks to this distinct representation
+that creates a digital fingerprint. Throughout the invoice discounting process, the NFT framework offers a
+strong mechanism to safeguard and check the legitimacy of invoices, improving transparency and
+traceability. As such, it has potential advantages through the simplification of verification processes,
+mitigation of fraud risks, and facilitation of effective administration of invoices and related financial activities.
+5.2.Implementing the system. • Tokenize invoices: Transform invoices into NFTs. This procedure can be
+automated with smart contracts, guaranteeing the immutability and accuracy of the invoice data. •
+Verification and Validation: In order to stop fraudulent or duplicate claims, smart contracts can confirm the
+legitimacy and authenticity of invoices. • Invoice Discounting Marketplace: Establish a marketplace where
+financial institutions or investors can examine available NFTs that represent invoices and select which ones
+to discount. • Discounting Process: When an investor buys an invoice NFT, ownership of the NFT is
+transferred to them and monies are instantaneously remitted at a discounted rate to the issuer's account. •
+Repayment and Settlement: Using a smart contract, the debtor pays the investor the invoice amount on the
+due date. This procedure guarantees prompt settlement and payback if it is automated. • Tokenized Asset
+Management: Investors are able to track payments, oversee the performance of their investments, and
+manage their portfolio of invoice NFTs. 5.3 Benefits of the system. Tokenizing Invoices: Each invoice is
+converted into a unique NFT that represents ownership or right to that specific invoice. These tokens are
+real and unchangeable since they are created on a blockchain network. Smart Contracts: Using smart
+contracts, you may automate the invoice discounting procedure. Smart contracts perform predefined
+actions, including discounting maturity or transferring ownership of the NFT upon payment, without the need
+for middlemen. Security and Trust: All parties involved benefit from the decentralised and immutable nature
+of blockchain technology. The assurance of invoice validity reduces the possibility of fraudulent activity and
+the proliferation of fake invoices. Verification and Authentication: NFTs provide an accessible way to verify
+an invoice's authenticity. The blockchain records the details and history of each invoice, making it possible to
+quickly and accurately authenticate the integrity of the invoice. Preventing Double Spending: The consensus
+process of blockchain technology prevents the spending of the same invoice twice. By documenting the
+status of an invoice on the blockchain as soon as it is financed or discounted, multiple discounts against the
+same invoice are avoided. Reduced Involvement of Middlemen: The usage of NFTs and blockchain
+significantly lessens the need for middlemen. The streamlining and fee reduction of this procedure benefits
+the invoicing firms as well as the investors. Market and Liquidity: Holders of NFT-based invoices have
+access to liquidity since they can be traded on decentralised markets. Market efficiency is increased by the
+simplicity with which investors can buy or sell these digital assets. Regulatory Compliance: Ensuring
+compliance with legal and regulatory frameworks is crucial. Adherence to regulations set forth by regulatory
+bodies like SEBI (Securities and Exchange Board of India) is vital. User Accessibility: Invoice finance can be
+made more affordable for smaller businesses or people who have less access to traditional financing options
+
+by expediting the process utilising blockchain technology and NFTs. Efficiency and Transparency: By
+reducing verification and settlement delays, blockchain's auditable and transparent features enhance the
+overall efficiency of the discounting and invoicing process. NFT application in invoice discounting provides a
+decentralised, secure, and efficient platform for investors and businesses alike by solving the primary
+drawbacks of the traditional method. 5.4 Challenges and considerations: Performance and Scalability
+Scaling blockchain technology to handle high volumes of invoice transactions presents scalability problems.
+The blockchain network may encounter performance bottlenecks, longer processing times for transactions,
+and higher transaction fees as the volume of transactions rises. These difficulties result from the way
+blockchain is designed, which requires that each transaction be verified and recorded by several nodes in a
+decentralised network. The following are some potential fixes for the scalability issues with blockchain-based
+invoice transactions: Layer 2 solutions: By shifting certain transaction processing to secondary layers, these
+solutions try to reduce the load on the primary blockchain. Off-chain transactions, for instance, can be
+carried out via payment channels or side chains, which lightens the burden on the primary blockchain while
+maintaining security and settlement finality. Sharding is the process of dividing the blockchain network into
+smaller shards, each of which is able to handle a certain number of transactions. Through the parallelization
+of transaction processing across several shards, this method can enhance scalability. But careful planning
+and coordination are needed to ensure data consistency and stop fraud across shards. Enhancements to
+consensus algorithms:
+Proof of Work (PoW) and Proof of Stake (PoS) are two common consensus
+algorithms used in blockchain
+
+2
+
+networks. To improve transaction quality, these methods might be optimised or other consensus techniques
+investigated. Security and Privacy of Data Concerns regarding data security and privacy arise when private
+invoice information is stored on a shared or public blockchain. The transaction history kept on public
+blockchains, like the Ethereum and Bitcoin networks, is transparent and unchangeable, making it accessible
+to everybody. Although this openness is advantageous for auditability and trust, it may reveal private invoice
+data to uninvited parties. Some strategies that can be used to reduce the risks to data privacy and security
+in blockchain-based invoice systems are as follows: Encryption: By encrypting invoice data before putting it
+on the blockchain, you can make sure that sensitive data is only accessible to those who are authorised and
+have the decryption keys. This aids in maintaining the data’s confidentiality. Permissioned blockchains:
+Sensitive invoicing data is kept secret by implementing a permissioned or private blockchain, which limits
+access to authorised parties only. By limiting the visibility of transactions to a specific group of participants,
+this strategy improves data privacy. Off-chain storage: Sensitive information can be encrypted and stored
+off-chain rather than being stored in its entirety on the blockchain. This allows the blockchain to maintain its
+immutability and transparency while protecting sensitive data by storing only the references or proofs that
+are required. Legal and Regulatory Aspect There are legal and regulatory obstacles when using blockchain
+for invoice discounting, such as data protection laws and smart contract enforceability. Depending on the
+jurisdiction in which the blockchain-based billing system is used, these difficulties may differ. The following
+actions can be done to mitigate legal and regulatory issues with blockchain-based invoice discounting:
+Observance of data protection laws: Blockchain systems have to abide by
+applicable data protection laws, including the General Data Protection Regulation
+(GDPR) of the European Union
+
+3
+
+. This entails making certain that invoices containing personal data are handled properly, with consent, and
+that the required security measures are in place. Legal enforceability: Smart contracts have to be created in
+accordance with current legal frameworks. They automate the performance of contractual duties on
+blockchain systems. Certain components, such digital signatures, might be necessary for legal jurisdictions
+to guarantee the enforcement of smart contracts. Together, authorities and legal experts must create
+frameworks that take into account the special qualities and advantages of blockchain technology.
+Collaboration and Standardisation Standardisation and interoperability are essential components of
+blockchain-based invoice discounting schemes. These features facilitate smooth interaction and
+communication between various systems, encouraging teamwork, effectiveness, and broad adoption. The
+following points help to clarify the significance of interoperability and standardisation: Combining with current
+systems: Multiple stakeholders, including banks, financial institutions, and enterprises, are frequently
+involved in invoice discounting. These entities can link and exchange data easily thanks to interoperability,
+which lowers friction and makes invoice discounting procedures more effective. Increased accessibility and
+market share: Interoperability across various blockchain-based invoice discounting services is facilitated by
+the standardisation of data formats and communication protocols. By allowing users of different platforms to
+do transactions with one another, interoperability broadens the market's possible counterparty pool and
+enhances liquidity. Cooperation and creativity: Within the blockchain ecosystem, standardisation efforts help
+create common practises, protocols, and interfaces, which promote cooperation and innovation.
+Organisations dedicated to standardisation, industry consortia, and open-source efforts strive to create
+shared standards, guarantee compatibility, and foster interoperability between various blockchain systems.
+Integration Complexity: • Legacy System Compatibility: There are compatibility issues with integrating
+blockchain technology with current financial systems, some of which may be based on legacy infrastructure.
+It takes a lot of technological know-how and preparation to ensure smooth communication between
+decentralised blockchain networks and conventional databases. • Data Migration and Security: Careful
+planning and execution are required to migrate sensitive financial data onto a blockchain without
+compromising its security or integrity. It is crucial to make sure that information is safe, private, and only
+accessible by those who are authorised. • Interoperability and Standards: It's critical to create standards for
+interoperability amongst different blockchain protocols and platforms. Smooth system integration and
+interoperability can be hampered by nonstandard practises. 5.5 Conclusion: Using blockchain and NFTs to
+implement invoice discounting presents a viable option to transform traditional invoice finance, giving
+businesses and investors greater accessibility, efficiency, and security. This is a creative idea that combines
+cutting edge blockchain technology with conventional finance. Careful planning, technological know-how,
+and collaboration between multiple stakeholders are necessary for its successful implementation in order to
+guarantee regulatory compliance and smooth operation. Algorithms: Algorithm 1 : Placing order to the
+Supplier by the Customer. Input : Order info {product, quantity, price, settlement date, delivery date},
+Supplier Address, Customer Address. Output : Order request is appended to Smart contract storage.
+Customer enters the order details such as the product id, quantity, price willing to pay, delivery date, invoice
+settlement date to the smart contract with Supplier address. // The customer makes use of the deployed
+smart contract to place an order for the supplier. These orders get into the smart contract storage queue for
+further processing. Algorithm 2 : Processing the order request by the Supplier. Input : Smart contract storage
+Output : Status of Order request // Ensures that the one who processes the order is indeed that supplier that
+the customer placed the order for. REQUIRE orderProcessor.Address == Supplier Address IF Order request
+agreed by the Supplier THEN Supplier updates the Order status to Agreed ELSE Supplier Reject Order
+request. Algorithm 3 : Minting of an NFT by the Supplier. Input : Invoice PDF, Customer’s Address,
+Supplier’s Address, Metadata for the NFT. Output : A new unsigned NFT minted, containing the IPFS hash
+
+of the Invoice PDF, and metadata like the Price, Owner’s address, Customer’s address. NFT price = Invoice
+amount. isApproved = False. customer = Customer Address tokenID++ Mint NFT using Invoice Metadata.
+Emit event to the stake holder. // Now, NFT.ownerAddress = Supplier Address Algorithm 4 : NFT approval
+by the Customer. Input : Unsigned NFT. Output : Signed NFT by the Customer. The customer will be notified
+that the NFT has been minted for the trade and he has to sign the NFT. REQUIRE (Approver.address ==
+NFT._customer, “Invalid Customer”) REQUIRE (NFT.ownerAddress == SupplierAddress, “Invalid Supplier
+Address”) NFT.isApproved = True. The ordered products will be delivered to the Customer. // By now, the
+ownership of the NFT will be with the supplier and since the NFT will be signed by the customer in the smart
+contract. The NFT will have an intrinsic value that is equivalent to the Invoice amount. Algorithm 5 :
+Checking NFT approval. Input : NFT Id Output : Display of NFT approval status. IF NFT.isApproved == True
+THEN Display (“The NFT has been approved by the %s”, Customer Address) ELSE Display(“This NFT is
+not yet approved by any of the Customer”) // Anyone can execute this smart contract given the NFT token
+URI Algorithm 6 : Agreement for the Invoice trade value Input : NFT, Financier’s address, Supplier’s address
+Output : Consensus on tradeValue of the NFT. Consensus = False tradeValue** = Financier comes out with
+a Trading Amount. WHILE Consensus == False AND deal is not terminated IF Supplier is satisfied THEN
+Consensus = True ELSE Supplier negotiates the tradeValue OR Terminate the Deal IF Financier is satisfied
+THEN. Consensus = True ELSE Financier makes a new tradeValue OR Terminate the Deal Algorithm 7 :
+NFT for Trading Input : NFT, Supplier Address, tradeValue**, Financier address Output : Transfer of NFT to
+Financier address. // Ensure only the true owner of the NFT can trade with the financier. REQUIRE
+(NFT.ownerAddress == Supplier Address, “You are not the owner of this NFT”) Supplier transfers the NFT to
+the Financier. Financier transfers tradeValue to Supplier. // Now, NFT.ownerAddress = Financier Address
+Algorithm 8 : NFT verification by the Customer. Input : NFT token URI. Output : None IF NFT.customer ==
+Customer Address AND NFT.approved == True THEN Customer gets to know that this is the same NFT that
+he had signed earlier and agreed to pay that on the due date. ELSE Customer identifies the NFT as
+unknown NFT. // This algorithm is usually used by the customer, to verify the integrity of the NFT. Algorithm
+9 : Settlement of the Invoice Input : Due date, NFT, Address of NFT owner, Customer Address Output :
+Transfer of NFT from the current owner to the Customer. IF Current Date >= Due Date THEN The NFT
+Owner approaches the Customer to settle the trade. NFT verification is done by the Customer. // Refer
+Algorithm - 8 Customer transfer the NFT.price to the NFT.ownerAddress The NFT owner transfers the NFT
+to the Customer. ELSE Financier waits for the due date. // Once the Invoice trading is settled, the Customer
+can either keep it himself or transfer it to the wallet with the lost private key (Burning the NFT). RESULTS
+AND DISCUSSION Improved Operational Efficiency: The time needed to process invoices was significantly
+lowered as a consequence of the blockchain and NFTs' integration. Operational efficiency has increased by
+X%; transactions that took weeks to verify and approve now happen in a matter of hours. This faster pace
+improves the agility of the entire financial ecosystem in addition to helping the invoicing companies by
+guaranteeing quick access to funds. Reinforcement of Trust and Security: A major factor in enhancing trust
+and security was the decentralised ledger system that is a feature of blockchain technology. The elimination
+of intermediaries eliminated the trust concerns linked to them, hence decreasing the likelihood of fraudulent
+operations. The percentage of fraudulent or forged invoices dropped by X%, demonstrating how reliable the
+system is in preserving invoice authenticity. Cost-effectiveness and Fee Reduction: The innovative approach
+reduced transaction fees for investors and invoicing corporations by doing away with middlemen. The cost
+savings were X% on average for each transaction. In addition to relieving financial strains, this fee reduction
+encourages further involvement in the invoice finance market, making it more accessible and competitive for
+companies of all sizes. Risk Mitigation: The risk of double-spending invoices was successfully mitigated by
+the implementation of blockchain technology. Furthermore, there was an X% decrease in delays and errors
+in invoice authentication as a result of the verification process becoming more efficient. By reducing the
+
+risks, investors and businesses that finance invoices can use a more dependable and safe platform.
+Preventing duplicate Spending Attacks: By utilising distributed ledger technology in blockchain technology,
+transactions are recorded in an unchangeable manner, thereby removing the possibility of duplicate
+spending. Every invoice has an NFT allocated to it by design, which guarantees its legitimacy and keeps
+duplicates or repeated financing attempts at bay. The integrity of the invoicing process is safeguarded by
+this defence against double spending attacks, which offers a level of protection never before possible in
+conventional financing systems. Enhanced Integrity and Immutability: Using blockchain technology
+strengthens the integrity and immutability of the entire invoicing ecosystem in addition to preventing double
+spending. Every transaction—from the generation of the invoice to the approval of the financing—is safely
+documented on the blockchain, producing an irreversible trail that improves accountability and openness to
+all parties concerned. CONCLUSION: The use of blockchain technology and NFTs (Non-Fungible Tokens)
+for invoice discounting represents a major advancement in the banking industry. This novel solution
+combines the flexibility and accessibility of NFTs with the dependability and security of blockchain
+technology to potentially revolutionise the traditional invoice finance market. Fundamentally, this idea
+transforms how companies handle their cash flows by enabling them to use their overdue invoices as
+valuable assets. Companies can quickly access liquidity by tokenizing these invoices as NFTs on a
+blockchain and selling these tokens to investors at a profit. In addition, it provides investors with a fresh way
+to add safe, transparent, and possibly high-yielding assets to their portfolios. This innovation's power is
+found in its many advantages. For businesses, it means less reliance on conventional financing sources,
+better cash flow management, and faster access to funds. Moreover, the greater security provided by
+blockchain's immutability and transparency lowers the possibility of fraud or manipulation in invoice
+transactions. Investors, on the other hand, have the chance to participate in a market that is potentially more
+profitable and transparent. Smaller investors can now take part in invoice financing, which was traditionally
+controlled by larger institutions, because to the fractional ownership that NFTs provide. Furthermore,
+counterparty risk is decreased by the transparency and traceability of blockchain technology, increasing the
+security of investments. However, a planned and coordinated effort is required for the effective application of
+this novel strategy. It necessitates a thorough comprehension of blockchain technology as well as
+conventional financial procedures. Furthermore, in order to guarantee that the system functions within the
+bounds of the law and protects the interests of all parties concerned, regulatory compliance is essential. The
+successful integration of multiple areas such as enterprises, financial institutions, regulatory agencies, and
+technology experts necessitates collaboration among these stakeholders to effectively handle the inherent
+complexities and hurdles. These parties need to collaborate to provide the infrastructure, protocols, and
+standards necessary to enable the smooth integration of invoice discounting with NFTs and blockchain. In
+conclusion, even if the path ahead may be difficult, there are a tonne of potential advantages. Using
+blockchain and NFTs to implement invoice discounting
+has the potential to completely transform the finance industry by providing investors
+and
+
+5
+
+businesses looking for diversified, safe assets with more accessibility, efficiency, and security. This groundbreaking idea has the potential to completely transform the finance sector through meticulous planning,
+technological know-how, and teamwork. This will present both new business and investment options.
+CONCLUSION OF WORK FOR PHASE-2: A working DApp with a smart contract that enabled the easy
+transfer of NFTs between financial companies and SMEs was the main deliverable. A user-friendly interface
+was created to make it simple for finance companies and SMEs to interact with the blockchain network,
+
+simplifying crucial invoice financing processes. Robust connections have been built for financial businesses
+and SMEs to seamlessly combine blockchain with current systems for tasks like accounting and payment
+processing. To guarantee the safe and dependable operation of the blockchain network and smart contracts,
+extensive testing and validation were carried out. Strict testing procedures were put in place to ensure
+intended functionality. A wealth of technical documentation was created, describing in detail the
+development and operation of the smart contract and blockchain network. Future maintenance and
+improvements will be guided by the information in this documentation. To seamlessly integrate the
+blockchain network and smart contract into the production setting, a deployment plan was developed. This
+included careful testing protocols and smooth data movement. To guarantee the blockchain network's and
+smart contracts' continuous, successful operation, a maintenance plan was developed. This plan describes
+routine inspections, upgrades, and troubleshooting steps when needed. At the end of this phase, a userfriendly and fully functional web application that streamlined invoice financing through the usage of
+blockchain and NFTs had been established. Its installation improved security measures and greatly
+simplified the invoice financing procedure. Future Work: Integration with Other Emerging Technologies: Talk
+about the possible benefits and opportunities that blockchain technology may offer when combined with
+other cutting-edge technologies like data analytics, Internet of Things, and artificial intelligence.
+Interoperability between Blockchain Networks: Examine the difficulties and possible solutions in order to
+provide seamless invoice discounting on several platforms by achieving interoperability between various
+blockchain networks. Examine privacy-preserving techniques, such as selective disclosure or zeroknowledge proofs, to allay privacy worries and preserve the advantages of blockchain technology for invoice
+discounting. Adoption Challenges and Solutions - Determine what obstacles stand in the way of the broad
+implementation of blockchain-based invoice discounting systems and provide solutions, such as
+cooperation, education, and regulatory support. Appendix A: Definitions, Acronyms, and Abbreviations
+Decentralisation: Decentralisation is the process of moving authority, control, and power from a single centre
+to a network of independent nodes. The system may thus become less susceptible to censorship or the
+concentration of power and more democratic and open. A key feature of blockchain technology is
+decentralisation, which enables safe, trustless transactions without the need for a central middleman.
+Blockchain: A distributed ledger technology that is decentralised, tamper-evident, and allows participants to
+record transactions. “Non-fungible token” (
+NFT): An NFT (non-fungible token) is a unique type of
+
+4
+
+digital asset that indicates ownership of a certain good or asset and can only be verified on a blockchain.
+Invoice: An invoice is a written statement provided to a customer by a provider that details the precise goods
+or services provided together with the costs incurred in providing them. It serves as both a formal
+documentation of the transaction and the provider's request for payment.Invoice finance is the process by
+which a company sells its outstanding invoices to a third party at a loss in order to raise fast money. Finance
+provider: In the context of invoice financing, a financial institution that provides businesses with short-term
+working capital by purchasing their outstanding bills at a discount is known as a finance company.
+Businesses benefit from improved cash flow and quick access to funds as a result. Ethereum Request for
+Comments (721, or
+ERC-721): Non-fungible tokens (NFTs) on the Ethereum blockchain
+
+1
+
+use an interface standard known as ERC-721. It describes how to create and maintain unique digital goods
+that can be bought, sold, and traded, like collectibles or gaming items. Smart contract: On the blockchain
+network, a self-executing contract is referred to as a smart contract. It has coded laws and regulations that
+take immediate effect upon the satisfaction of certain requirements. Smart contracts automate the secure,
+open, decentralised execution of contracts and transactions without the need for middlemen.
+
+

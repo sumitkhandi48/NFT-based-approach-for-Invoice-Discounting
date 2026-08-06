@@ -32,11 +32,11 @@ export async function uploadInvoice(req, res) {
 // POST /api/invoices/mint
 export async function mintInvoice(req, res) {
     try {
-        const { cid, buyerAddress, invoiceAmount, dueDate } = req.body;
+        const { cid, buyerAddress, invoiceAmount, dueDate, isPrivate } = req.body;
 
-        if (!cid || !buyerAddress || !invoiceAmount || !dueDate) {
+        if (!cid || !buyerAddress || (!invoiceAmount && !isPrivate) || !dueDate) {
             return res.status(400).json({
-                error: "Missing required fields: cid, buyerAddress, invoiceAmount, dueDate",
+                error: "Missing required fields: cid, buyerAddress, invoiceAmount (if not private), dueDate",
             });
         }
 
